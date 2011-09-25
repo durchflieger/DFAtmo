@@ -1,0 +1,68 @@
+diff --git a/src/xitk/event.c b/src/xitk/event.c
+--- a/src/xitk/event.c
++++ b/src/xitk/event.c
+@@ -1231,6 +1231,41 @@ void gui_execute_action_id(action_id_t a
+     }
+     break;
+ 
++  case ACTID_DFATMO_ENABLED:
++    if (gGui->post_video_elements_num) {
++      int i;
++      for (i = 0; i < gGui->post_video_elements_num; ++i) {
++        post_element_t *pve = gGui->post_video_elements[i];
++        if (!strcmp(pve->name, "dfatmo") || !strcmp(pve->name, "atmo")) {
++          xine_post_in_t *input_api = (xine_post_in_t *) xine_post_input(pve->post, "parameters");
++          if (input_api) {
++            xine_post_api_t *post_api = (xine_post_api_t *) input_api->data;
++            xine_post_api_descr_t *api_descr = post_api->get_param_descr();
++            xine_post_api_parameter_t *parm = api_descr->parameter;
++            while(parm->type != POST_PARAM_TYPE_LAST) {
++              if (!strcmp(parm->name, "enabled")) {
++                uint8_t *param_data = malloc(api_descr->struct_size);
++                if (param_data) {
++                  post_api->get_parameters(pve->post, param_data);
++                  int *enabled = (int *)(param_data + parm->offset);
++                  if (gGui->numeric.set)
++                    *enabled = (gGui->numeric.arg) ? 1: 0;
++                  else
++                    *enabled = (*enabled) ? 0: 1;
++                  post_api->set_parameters(pve->post, param_data);
++                  free(param_data);
++                }
++                break;
++              }
++              parm++;
++            }
++          }
++          break;
++        }
++      }
++    }
++    break;
++
+   default:
+     break;
+   }
+diff --git a/src/xitk/kbindings.h b/src/xitk/kbindings.h
+--- a/src/xitk/kbindings.h
++++ b/src/xitk/kbindings.h
+@@ -157,6 +157,7 @@ typedef enum {
+   ACTID_PVR_SETMARK,
+   ACTID_PVR_SETNAME,
+   ACTID_PVR_SAVE,
++  ACTID_DFATMO_ENABLED,
+ 
+   /*
+    * The below events map one-to-one with definitions in xine-lib's events.h 
+diff --git a/src/xitk/kbindings_common.c b/src/xitk/kbindings_common.c
+--- a/src/xitk/kbindings_common.c
++++ b/src/xitk/kbindings_common.c
+@@ -325,6 +325,8 @@ static const kbinding_entry_t default_bi
+     "PVRSetName",             ACTID_PVR_SETNAME             , "VOID",     KEYMOD_NOMOD   , 0 , 0},
+   { "input_pvr: save the stream section",
+     "PVRSave",                ACTID_PVR_SAVE                , "VOID",     KEYMOD_NOMOD   , 0 , 0},
++  { "DFAtmo: switch on/off",
++    "DFAtmoEnabled",          ACTID_DFATMO_ENABLED           , "VOID",     KEYMOD_NOMOD   , 0 , 0},
+ #ifdef ENABLE_VDR_KEYS
+   { "VDR Red button",
+     "VDRButtonRed",           ACTID_EVENT_VDR_RED            , "VOID",     KEYMOD_NOMOD   , 0 , 0},

@@ -1,0 +1,6 @@
+atmodriver.so					usr/lib/dfatmo
+dfatmo-xbmc-addon.zip	usr/lib/dfatmo
+dfatmo-file.so				usr/lib/dfatmo/drivers
+dfatmo-serial.so			usr/lib/dfatmo/drivers
+dfatmo-df10ch.so			usr/lib/dfatmo/drivers
+dfatmo.h							usr/include

@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "atmodriver", "atmodriver\atmodriver.vcxproj", "{4B0C92CA-EC3F-4B80-BE0F-94D21A9DEFF5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "filedriver", "filedriver\filedriver.vcxproj", "{532D86C5-0472-4CCB-9794-28A30EAE263C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "serialdriver", "serialdriver\serialdriver.vcxproj", "{7B17C12E-B16E-4C32-98AB-820DFD806CAE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "df10chdriver", "df10chdriver\df10chdriver.vcxproj", "{390D8207-763B-4BF7-B3E9-BBCDB1CCF590}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4B0C92CA-EC3F-4B80-BE0F-94D21A9DEFF5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4B0C92CA-EC3F-4B80-BE0F-94D21A9DEFF5}.Debug|Win32.Build.0 = Debug|Win32
+		{4B0C92CA-EC3F-4B80-BE0F-94D21A9DEFF5}.Release|Win32.ActiveCfg = Release|Win32
+		{4B0C92CA-EC3F-4B80-BE0F-94D21A9DEFF5}.Release|Win32.Build.0 = Release|Win32
+		{532D86C5-0472-4CCB-9794-28A30EAE263C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{532D86C5-0472-4CCB-9794-28A30EAE263C}.Debug|Win32.Build.0 = Debug|Win32
+		{532D86C5-0472-4CCB-9794-28A30EAE263C}.Release|Win32.ActiveCfg = Release|Win32
+		{532D86C5-0472-4CCB-9794-28A30EAE263C}.Release|Win32.Build.0 = Release|Win32
+		{7B17C12E-B16E-4C32-98AB-820DFD806CAE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7B17C12E-B16E-4C32-98AB-820DFD806CAE}.Debug|Win32.Build.0 = Debug|Win32
+		{7B17C12E-B16E-4C32-98AB-820DFD806CAE}.Release|Win32.ActiveCfg = Release|Win32
+		{7B17C12E-B16E-4C32-98AB-820DFD806CAE}.Release|Win32.Build.0 = Release|Win32
+		{390D8207-763B-4BF7-B3E9-BBCDB1CCF590}.Debug|Win32.ActiveCfg = Debug|Win32
+		{390D8207-763B-4BF7-B3E9-BBCDB1CCF590}.Debug|Win32.Build.0 = Debug|Win32
+		{390D8207-763B-4BF7-B3E9-BBCDB1CCF590}.Release|Win32.ActiveCfg = Release|Win32
+		{390D8207-763B-4BF7-B3E9-BBCDB1CCF590}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

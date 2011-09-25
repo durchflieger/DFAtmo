@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon
+	id="script.capturetest"
+	name="Capture Test"
+	version="0.1.0"
+	provider-name="durchflieger"
+	>
+	<requires>
+		<import addon="xbmc.python" version="2.0"/>
+	</requires>
+	<extension point="xbmc.python.script" library="capturetest.py">
+		<provides>executable</provides>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>Test for new XBMC RenderCapture script extension</summary>
+		<description>This script captured 10 continuous images of size 128 immediately after playback of a video starts and stores them as PPM files with name '/tmp/captured[n]'.</description>
+		<platform>all</platform>
+	</extension>
+</addon>

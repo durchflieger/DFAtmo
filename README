@@ -1,0 +1,439 @@
+This is the README file of DFAtmo the driver for Atmolight controllers for
+XBMC and xinelib based video players.
+
+Written by: Andreas Auras (yak54@inkennet.de)
+
+See the file COPYING for license information.
+
+Project repository: git://github.com/durchflieger/DFAtmo.git
+
+
+Description:
+------------
+
+"DFAtmo" allows you to drive a colored backlighting for TVs similar to the
+"Ambilight" of Philips televisions. The displayed color depends on the
+actual shown video content.
+Backlighting your TV is best done with light-emitting diodes (LEDs) that are
+arranged as RGB light sources on stripes that could be mounted at the back
+of your TV.
+To drive these LED's a dedicated hardware is necessary that is called the
+"Atmolight" controller. Beside some commercial products that you can simply buy
+there exists several projects to build these hardware by yourself. 
+
+DFAtmo continuously analyzes the video picture and generates output data
+for these Atmolight controllers. DFAtmo supports XBMC and xinelib based
+media players where it is installed as a plugin or addon. XBMC is supported
+on Linux and Windows platforms.
+
+To drive different Atmolight controller hardware DFAtmo uses it's own plugin
+mechanism for output drivers. These output drivers are implemented as shared
+libraries and are loaded dynamically at runtime.
+Furthermore the python script based DFAtmo XBMC addon supports another plugin
+mechanism for output drivers which are implemented as python scripts.
+Currently there are output drivers implemented for the "classic" Atmolight
+controller and my own designed DF10CH "next generation" controller.
+
+For debugging proposes there exists another output driver that is able to write
+the color data to a file in a human readable layout.
+And as an example for a script based output driver this file based output
+driver is also implemented in python. 
+
+Because of the modular plugin mechanism new output driver could be implemented
+easily to support more hardware or even other targets.
+ 
+
+For more detailed informations about "Atmolight" visit the VDR-Wiki:
+	http://www.vdr-wiki.de/wiki/index.php/Atmo-Light
+	http://www.vdr-wiki.de/wiki/index.php/DF10CH
+	http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
+
+
+Components of DFAtmo:
+---------------------
+
+DFAtmo contains the following components:
+
+1) Output drivers
+2) Native Python "atmodriver" module
+3) DFAtmo XBMC addon
+4) DFAtmo xinelib plugin
+
+These components have dependencies among each other. The XBMC addon
+needs 2) which in turn needs 1). The xinelib plugin needs 1).
+The output drivers are shared by 3) and 4)
+
+
+Building the components:
+------------------------
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+IMPORTANT NOTE: Currently DFAtmo has special requirements on its
+dependencies! DFAtmo will not work with the current "officially" released
+XBMC nor will it work with xinelib base media players that
+are compiled against the currently "officially" released xinelib.
+
+The DFAtmo XBMC addon currently requires a very recent XBMC version from git
+which has to be extended with a patch that add's access to the video render capture
+interface of XBMC from within python scripts.
+
+This git repository of XBMC contains the necessary patch:
+	git://github.com/durchflieger/xbmc.git
+	
+Branch "master" is derived from main xbmc master trunk.
+Branch "pvr-ppa" is derived from opdenkamp/pvr-ppa trunk.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+The build process step by step:
+There exists a common build target for the "atmodriver" module and the
+output drivers.
+
+For building the "atmodriver" module a python development environment is
+required. The challenge here is that the version of the python environment
+must be the same version your XBMC is compiled against.
+For ubuntu this is currently the ordinary platform packet "python2.6-dev".
+For XBMC on Windows you currently have to download the XBMC source and
+build dependencies and use the python libs from the build dependencies.
+
+The output driver for the DF10CH controller depends on libusb-1.0 which
+could be downloaded for Linux from:
+	http://www.libusb.org/wiki/libusb-1.0
+
+For ubuntu you can use package "libusb-1.0-0-dev".
+
+For windows you need a very recent version with windows support from here:
+	http://www.libusb.org/wiki/windows_backend
+
+Before compiling the components you should decide at which place they should
+be installed. This is controlled by the DFATMOINSTDIR make variable and the
+default for Linux is "/usr/local". Please not that the XBMC addon currently
+searches the components under "/usr" and "/usr/local". So you should use
+one of these locations.
+
+Compiling and installing the two components for linux:
+	make dfatmo
+	make dfatmoinstall
+	
+For Windows the build process currently is not Makefile based.
+There exists a Visual C++ 2010 project solution file in directory
+"project" to build the components from within Visual Studio C++.
+The XBMC source tree should be on the same directory level as
+the DFAtmo source tree and should be called "xbmc" at top.
+The same is it for libusb-1.0 and the top should be "libusb".
+
+For Windows the generated "atmodriver.pyd" should be installed within the DFAtmo
+XBMC addon script directory under "resources/lib.nt" and the output driver
+dll's under "resources/lib.nt/drivers". This currently has to be done manually.
+
+
+
+Building the DFAtmo XBMC addon as a installable zip file 'dfatmo-xbmc-addon.zip' for Linux:
+	make xbmcaddon
+
+Direct installation to $HOME/.xbmc/addons for Linux with:
+	make xbmcinstall
+	
+	
+For Windows there exists a Makefile target to build a installable zip file
+"dfatmo-xbmc-addon-win.zip" which contains the addon and also the "atmodriver"
+and output driver components. It could be executed from a cygwin environment:
+	make xbmcaddonwin
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+In the git repository you will find already a recent version of
+"dfatmo-xbmc-addon-win.zip" ready for installation.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+For building the DFAtmo xinelib plugin you need a recent xine-lib-1.2
+release from here:
+	http://hg.debian.org/hg/xine-lib/xine-lib-1.2
+
+Please note that this library version is currently not the "official" one
+and it is not used on ordinary Linux distributions.
+Be aware that the xine-lib based media players you like to use should
+also be compiled against the xine-lib-1.2.
+
+Compiling and installation of the plugin:
+	make xineplugin
+	make xineinstall
+
+
+For ubuntu there exists a debian package build you can use to build all components
+in one step with:
+	dpkg-buildpackage -b -D -tc -sd -us -uc
+	
+This generates the two deb packages "dfatmo" and "libxine-dfatmo-plugin". The
+"dfatmo" package also contains the XBMC addon zip file which will be installed
+to "/usr/lib/dfatmo".
+	
+	
+Additional patches located in sub directory 'patches':
+------------------------------------------------------
+
+xine-ui-dfatmo-switch.patch
+
+This is a patch for the xine-ui player that extends the player with a 'DFAtmoEnabled' command
+to switch the DFAtmo on/off.
+The command can be bound to keyboard or LIRC keys but it is not supported by the remote interface.
+
+xineliboutput-dfatmo-switch.patch
+
+This is a patch for the xineliboutput player that extends the player with a 'DFAtmoEnabled' command
+to switch the DFAtmo on/off. Send slave command "DFAtmoEnabled" for toggling on/off,
+"DFAtmoEnabled 0" for switching off or "DFAtmoEnabled 1" for switching on.
+Also pressing keyboard key 'a' or sending LIRC command 'DFAtmoEnabled' toggles the DFAtmo.
+
+Note that these patches do also support the older "atmo" xine-lib plugin.
+
+
+Configuration of the DFAtmo XBMC addon:
+---------------------------------------
+
+Installation of the DFAtmo addon zip file could be done with the usual XBMC
+functionality.
+The addon could be configured by the user with the usual addon settings panel.
+
+The addon could be started and stopped from the Program's menue. Alternativley
+the addon could be started automatically by setting the auto lauch option
+in the addon settings menu.
+
+
+Configuration of the DFAtmo xinelib plugin:
+-------------------------------------------
+
+Load the DFAtmo plugin as a post plugin in your xinelib based media player.
+For the VDR xineliboutput player or xine-ui player add a command line option like this:
+
+--post=dfatmo:driver=serial,driver_param=/dev/ttyS0,top=1,bottom=1,left=1,right=1,center=1
+
+When using DF10CH controller(s):
+
+--post dfatmo:driver=df10ch
+
+The plugin stores the actual parameter setting in the xinelib config file
+under the key 'post.dfatmo.parameters'.
+Plugin parameters specified at the command line are mandatory and always
+override the parameters stored in the xinelib config file at startup time.
+You should specify all static parameters like output driver or section layout
+at the command line.
+Parameters that you wish to trim while player is running should not be specified within the
+command line. Players like xine-ui have GUI support for changing plugin parameters
+(press <alt><shift>p to show the post processing panel).
+
+
+Parameters understood by DFAtmo:
+--------------------------------
+
+There are a hole bunch of parameters to control DFAtmo. 
+Changes of Parameters marked with * will be immediately applied while the video player
+is running. The other parameters will be applied after a stream stop/start sequence
+(this happens already when switching a channel within VDR).
+
+Parameter          Default          Description
+
+driver             none             Selects output driver. Currently supported are:
+
+                                    file     Write output data to file. Useful for 
+                                             testing and debugging.
+                                           
+                                    serial   Send output data to serial port. Standard
+                                             protocol is for "classic" Atmolight
+                                             2 channel controller. See:
+                                             http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
+                                             
+                                    df10ch	 Output driver for my own designed 
+                                             DF10CH 10 channel Controller(s).
+
+driver_param                        Parameter for output driver:
+
+                                    file:    File name of output file. If not specified
+                                             "atmo_data.out" is used.
+                                             
+                                    serial:  Path to serial output device e.g. "/dev/ttyS0"
+                                             See description for serial output driver for
+                                             further options.
+
+                                    df10ch:  All connected controllers are scanned automatically.
+                                             No parameter required here.
+
+top
+bottom
+left
+right
+center
+top_left
+top_right
+bottom_left
+bottom_right       0                Number of sections (RGB channel groups) in area.
+                                    For top, bottom, left and right area more then one section could be
+                                    specified.
+                                    Valid values: 0 ... 128 for top, bottom, left, right
+                                    Valid values: 0 ... 1 for center, top_left, top_right, bottom_left, bottom_right
+
+                                    For DF10CH controller you do not have to specify these parameters here because they are read
+                                    from the controller configuration data. Use the DF10CH setup program to configure your
+                                    desired layout.
+                                    
+                                    
+analyze_rate *     35               Rate of frame grabbing and video analysis. Unit milliseconds.
+                                    Valid values: 10 ... 500
+
+analyze_size *     1                Size of analyze window. The window width is calculated by (analyze_size+1)*64 pixel.
+                                    The window height is calculated aspect correct according to the grabbed video
+                                    window size. So a analyze size of 1 for a 16:9 video will give us a 128x72 pixel
+                                    analyze window.
+                                    Valid values: 0 ... 3
+
+                                    For DF10CH controller you do not have to specify this parameter here because it is read
+                                    from the controller configuration data. Use the DF10CH setup program to configure your
+                                    desired analyze size.
+                                    
+overscan *         30               Ignored overscan border of grabbed video frame.
+                                    Unit is percentage of 1000. e.g. 30 -> 3%
+                                    Valid values: 0 ... 200
+
+                                    For DF10CH controller you do not have to specify this parameter here because it is read
+                                    from the controller configuration data. Use the DF10CH setup program to configure your
+                                    desired overscan.
+                                    
+edge_weighting *   60               Power of edge weighting.
+																		Value is divided by 10 e.g. 80 -> power of 8
+																		Valid values 10 ... 200
+
+                                    For DF10CH controller you do not have to specify this parameter here because it is read
+                                    from the controller configuration data. Use the DF10CH setup program to configure your
+                                    desired edge weighting.
+
+darkness_limit *   1                Minimum brightness of pixel. Values below are interpreted as black pixel.
+                                    Used to detect and skip "black borders" in video.
+                                    Valid values are 0 ... 100
+
+hue_win_size *     3                Windowing size for HUE. Valid values 0 ... 5
+
+sat_win_size *     3                Windowing size for saturation. Valid values 0 ... 5
+
+hue_treshold	*		 93								Threshold limit for change of color.
+																		Unit percentage of 100. Valid values 1 ... 100
+																		 
+brightness	*      100              Controls brightness of generated color values.
+                                    Unit percentage of 100. Valid values 50 ... 300
+                                    
+                                    Note: When using DF10CH controller(s) it is better to use the white calibration or
+                                    common brightness feature of the DF10CH setup program instead of this
+                                    parameter because you will lose lesser or no PWM resolution.
+
+uniform_brightness * 0              Enable/Disable uniform brightness calculation.
+                                    Valid values: 0 (disable), 1 (enable)
+                                    When enabled only one uniform average brightness value is calculated
+                                    for all sections. This is the behavior of the "classic"
+                                    VDR Atmolight plugin.
+                                    When disabled a average brightness value is calculated for each
+                                    section. This mode is more suitable when many sections for a area exists.   
+                                    
+filter *           combined         Select smoothness filter. Currently there are two filters
+                                    supported: percentage and combined.
+                                    Valid values: off, percentage, combined
+
+filter_smoothness * 50              Controls filter smoothness of percentage filter.
+                                    Unit percentage of 100. Valid values 1 ... 100
+
+filter_length *    500              Controls filter length of combined filter.
+                                    Unit milliseconds. Valid values 300 ... 5000
+
+filter_threshold * 40               Controls filter threshold of combined filter.
+                                    Unit percentage of 100. Valid values 1 ... 100
+
+filter_delay *     0                Controls delay of output send to controller.
+                                    Unit milliseconds. Valid values 0 ... 1000
+                                    Note: Delay should be specified as multiples of 20ms
+                                                                        
+wc_red
+wc_green
+wc_blue *          255              White calibration values for red, green and blue channel.
+                                    Valid values 0 ... 255.
+                                    
+                                    Note: When using DF10CH controller(s) it is better to use the white calibration 
+                                    feature of the DF10CH setup program instead of this parameter because you will
+                                    lose lesser PWM resolution.
+
+gamma *            0                Gamma correction factor for red, green and blue channel.
+                                    Value is divided by 10 e.g. 25 -> gamma 2.5
+                                    Valid values 0 ... 50. 0 means no gamma correction
+                                    
+                                    Note: When using DF10CH controller(s) it is better to use the gamma calibration 
+                                    feature of the DF10CH setup program instead of this parameter because you will not
+                                    lose PWM resolution.
+
+start_delay *      250              Delay after stream start before first output is send [ms].
+                                    Currently not suported by XBMC addon.
+                                    Valid values 0 ... 5000.
+
+enabled *          1                Enable/Disable output of color values to atmolight controller.
+                                    Valid values: 0 (disable), 1 (enable)
+        
+
+
+For some parameters (e.g. filter parameters) you will find a more detailed description here:
+	http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
+
+
+The serial output driver understood some more options within the "driver_param" parameter.
+These options are applied as keyword/value pairs seperated by a colon. Several options
+are separated by semikolon.
+
+usb:<expr>
+	          For users with usb-to-serial converters the device could be specified as a
+	          regular expression on Linux platform that is looked up in "/proc/tty/driver/usbserial"
+	          to evaluate the /dev/ttyUSB device. The option is a regular expression which is
+	          used to match a corresponding entry in "usbserial".
+            e.g.: usb:pl2303.*-[^6]
+
+proto:<descriptor>
+						Protocol descriptor string that describes the byte sequence that is send to
+						the Atmolight controller.
+						For each byte position within the sequence you can specify a constant value 
+						(decimal or hexadecimal) or a color variable. The name for the color variable
+						consists of the color code, area code and optional the section number. Section
+						numbers start from 1. Each byte position is separated by "|".
+						The color codes are: R = red, G = green, B = blue
+						The area codes are: T = top, B = bottom, L = left, R = right, C = center,
+						                    TL = top left, TR = top right, BL = bottom left,
+						                    BR = bottom right
+						Color and area codes are case insensitiv.
+						Example: Rl2 -> red color of left area section 2
+						         Btl -> blue color of top left area
+						         xFF -> constant value 255
+						         
+						There are two predefined protocol sequences that could be specified as the
+						descriptor:
+						
+						classic -> "255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
+						df4ch   -> "255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
+							  
+						In case you do not specifiy a protocol descriptor the "classic" protocol
+						will be used as default.
+
+speed:<baud>
+						Serial port transmission speed.
+						Supported values on Linux are: 1200,2400,4800,9600,19200,38400,57600,
+						                               115200,230400,460800
+						Supported values on Windows are: 1200,2400,4800,9600,19200,38400,57600,
+						                               115200,128000,256000
+
+Example for a whole driver parameter:
+"COM5;speed:115200;proto=classic"
+
+
+The DFAtmo XBMC addon supports output drivers written as python scripts. To use such a
+driver set the "Output driver" parameter to "Custom" and enter the name of the python module
+to load in the "Custom driver" parameter field.
+The python module should be store in the DFAtmo XBMC addon directory under
+"resources/lib/drivers".
+There is already a example driver called "mydriver" that writes a file with color data
+similar to the native file output driver. The name of the file is specified
+in the "Driver parameters" field.
+                     
