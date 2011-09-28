@@ -13,7 +13,7 @@
 	</extension>
 	<extension point="xbmc.addon.metadata">
 		<summary>Test for new XBMC RenderCapture script extension</summary>
-		<description>This script captured 10 continuous images of size 128 immediately after playback of a video starts and stores them as PPM files with name '/tmp/captured[n]'.</description>
+		<description>This script captured 10 continuous images of size 256 immediately after playback of a video starts and stores them as PPM files with name 'special://temp/captured[n].ppm'.</description>
 		<platform>all</platform>
 	</extension>
 </addon>

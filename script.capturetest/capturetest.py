@@ -1,6 +1,4 @@
-import os, platform, xbmc
-
-isWindows = (platform.system() == 'Windows')
+import os, xbmc
 
 def displayNotification(msg):
     xbmc.executebuiltin('Notification("CaptureTest","' + str(msg) + '")')
@@ -11,7 +9,7 @@ class CapturePlayer(xbmc.Player):
     
     def onPlayBackStarted(self):
         if self.isPlayingVideo():
-            if isWindows:
+            if os.name == 'nt':
                 openParm = "wb"
             else:
                 openParm = "w"
