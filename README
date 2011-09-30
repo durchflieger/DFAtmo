@@ -44,9 +44,9 @@ easily to support more hardware or even other targets.
  
 
 For more detailed informations about "Atmolight" visit the VDR-Wiki:
-	http://www.vdr-wiki.de/wiki/index.php/Atmo-Light
-	http://www.vdr-wiki.de/wiki/index.php/DF10CH
-	http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
+  http://www.vdr-wiki.de/wiki/index.php/Atmo-Light
+  http://www.vdr-wiki.de/wiki/index.php/DF10CH
+  http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
 
 
 Components of DFAtmo:
@@ -73,15 +73,9 @@ dependencies! DFAtmo will not work with the current "officially" released
 XBMC nor will it work with xinelib base media players that
 are compiled against the currently "officially" released xinelib.
 
-The DFAtmo XBMC addon currently requires a very recent XBMC version from git
-which has to be extended with a patch that add's access to the video render capture
-interface of XBMC from within python scripts.
-
-This git repository of XBMC contains the necessary patch:
-	git://github.com/durchflieger/xbmc.git
-	
-Branch "master" is derived from main xbmc master trunk.
-Branch "pvr-ppa" is derived from opdenkamp/pvr-ppa trunk.
+The DFAtmo XBMC addon currently requires a very recent XBMC version from git.
+A version after Sep 30 2011 which included commit
+54e4ca5c481e20cdc2f96d866f3346bfd1482ce9 is sufficient.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -99,12 +93,12 @@ build dependencies and use the python libs from the build dependencies.
 
 The output driver for the DF10CH controller depends on libusb-1.0 which
 could be downloaded for Linux from:
-	http://www.libusb.org/wiki/libusb-1.0
+  http://www.libusb.org/wiki/libusb-1.0
 
 For ubuntu you can use package "libusb-1.0-0-dev".
 
 For windows you need a very recent version with windows support from here:
-	http://www.libusb.org/wiki/windows_backend
+  http://www.libusb.org/wiki/windows_backend
 
 Before compiling the components you should decide at which place they should
 be installed. This is controlled by the DFATMOINSTDIR make variable and the
@@ -113,9 +107,9 @@ searches the components under "/usr" and "/usr/local". So you should use
 one of these locations.
 
 Compiling and installing the two components for linux:
-	make dfatmo
-	make dfatmoinstall
-	
+  make dfatmo
+  make dfatmoinstall
+  
 For Windows the build process currently is not Makefile based.
 There exists a Visual C++ 2010 project solution file in directory
 "project" to build the components from within Visual Studio C++.
@@ -130,16 +124,16 @@ dll's under "resources/lib.nt/drivers". This currently has to be done manually.
 
 
 Building the DFAtmo XBMC addon as a installable zip file 'dfatmo-xbmc-addon.zip' for Linux:
-	make xbmcaddon
+  make xbmcaddon
 
 Direct installation to $HOME/.xbmc/addons for Linux with:
-	make xbmcinstall
-	
-	
+  make xbmcinstall
+  
+  
 For Windows there exists a Makefile target to build a installable zip file
 "dfatmo-xbmc-addon-win.zip" which contains the addon and also the "atmodriver"
 and output driver components. It could be executed from a cygwin environment:
-	make xbmcaddonwin
+  make xbmcaddonwin
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 In the git repository you will find already a recent version of
@@ -150,7 +144,7 @@ In the git repository you will find already a recent version of
 
 For building the DFAtmo xinelib plugin you need a recent xine-lib-1.2
 release from here:
-	http://hg.debian.org/hg/xine-lib/xine-lib-1.2
+  http://hg.debian.org/hg/xine-lib/xine-lib-1.2
 
 Please note that this library version is currently not the "official" one
 and it is not used on ordinary Linux distributions.
@@ -158,19 +152,19 @@ Be aware that the xine-lib based media players you like to use should
 also be compiled against the xine-lib-1.2.
 
 Compiling and installation of the plugin:
-	make xineplugin
-	make xineinstall
+  make xineplugin
+  make xineinstall
 
 
 For ubuntu there exists a debian package build you can use to build all components
 in one step with:
-	dpkg-buildpackage -b -D -tc -sd -us -uc
-	
+  dpkg-buildpackage -b -D -tc -sd -us -uc
+  
 This generates the two deb packages "dfatmo" and "libxine-dfatmo-plugin". The
 "dfatmo" package also contains the XBMC addon zip file which will be installed
 to "/usr/lib/dfatmo".
-	
-	
+  
+  
 Additional patches located in sub directory 'patches':
 ------------------------------------------------------
 
@@ -187,7 +181,7 @@ to switch the DFAtmo on/off. Send slave command "DFAtmoEnabled" for toggling on/
 "DFAtmoEnabled 0" for switching off or "DFAtmoEnabled 1" for switching on.
 Also pressing keyboard key 'a' or sending LIRC command 'DFAtmoEnabled' toggles the DFAtmo.
 
-Note that these patches do also support the older "atmo" xine-lib plugin.
+Note that these patches do also support the older "atmo" xinelib plugin.
 
 
 Configuration of the DFAtmo XBMC addon:
@@ -245,7 +239,7 @@ driver             none             Selects output driver. Currently supported a
                                              2 channel controller. See:
                                              http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
                                              
-                                    df10ch	 Output driver for my own designed 
+                                    df10ch   Output driver for my own designed 
                                              DF10CH 10 channel Controller(s).
 
 driver_param                        Parameter for output driver:
@@ -301,8 +295,8 @@ overscan *         30               Ignored overscan border of grabbed video fra
                                     desired overscan.
                                     
 edge_weighting *   60               Power of edge weighting.
-																		Value is divided by 10 e.g. 80 -> power of 8
-																		Valid values 10 ... 200
+                                    Value is divided by 10 e.g. 80 -> power of 8
+                                    Valid values 10 ... 200
 
                                     For DF10CH controller you do not have to specify this parameter here because it is read
                                     from the controller configuration data. Use the DF10CH setup program to configure your
@@ -316,10 +310,10 @@ hue_win_size *     3                Windowing size for HUE. Valid values 0 ... 5
 
 sat_win_size *     3                Windowing size for saturation. Valid values 0 ... 5
 
-hue_treshold	*		 93								Threshold limit for change of color.
-																		Unit percentage of 100. Valid values 1 ... 100
-																		 
-brightness	*      100              Controls brightness of generated color values.
+hue_treshold  *     93                Threshold limit for change of color.
+                                    Unit percentage of 100. Valid values 1 ... 100
+                                     
+brightness  *      100              Controls brightness of generated color values.
                                     Unit percentage of 100. Valid values 50 ... 300
                                     
                                     Note: When using DF10CH controller(s) it is better to use the white calibration or
@@ -378,7 +372,7 @@ enabled *          1                Enable/Disable output of color values to atm
 
 
 For some parameters (e.g. filter parameters) you will find a more detailed description here:
-	http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
+  http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
 
 
 The serial output driver understood some more options within the "driver_param" parameter.
@@ -386,43 +380,43 @@ These options are applied as keyword/value pairs seperated by a colon. Several o
 are separated by semikolon.
 
 usb:<expr>
-	          For users with usb-to-serial converters the device could be specified as a
-	          regular expression on Linux platform that is looked up in "/proc/tty/driver/usbserial"
-	          to evaluate the /dev/ttyUSB device. The option is a regular expression which is
-	          used to match a corresponding entry in "usbserial".
+            For users with usb-to-serial converters the device could be specified as a
+            regular expression on Linux platform that is looked up in "/proc/tty/driver/usbserial"
+            to evaluate the /dev/ttyUSB device. The option is a regular expression which is
+            used to match a corresponding entry in "usbserial".
             e.g.: usb:pl2303.*-[^6]
 
 proto:<descriptor>
-						Protocol descriptor string that describes the byte sequence that is send to
-						the Atmolight controller.
-						For each byte position within the sequence you can specify a constant value 
-						(decimal or hexadecimal) or a color variable. The name for the color variable
-						consists of the color code, area code and optional the section number. Section
-						numbers start from 1. Each byte position is separated by "|".
-						The color codes are: R = red, G = green, B = blue
-						The area codes are: T = top, B = bottom, L = left, R = right, C = center,
-						                    TL = top left, TR = top right, BL = bottom left,
-						                    BR = bottom right
-						Color and area codes are case insensitiv.
-						Example: Rl2 -> red color of left area section 2
-						         Btl -> blue color of top left area
-						         xFF -> constant value 255
-						         
-						There are two predefined protocol sequences that could be specified as the
-						descriptor:
-						
-						classic -> "255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
-						df4ch   -> "255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
-							  
-						In case you do not specifiy a protocol descriptor the "classic" protocol
-						will be used as default.
+            Protocol descriptor string that describes the byte sequence that is send to
+            the Atmolight controller.
+            For each byte position within the sequence you can specify a constant value 
+            (decimal or hexadecimal) or a color variable. The name for the color variable
+            consists of the color code, area code and optional the section number. Section
+            numbers start from 1. Each byte position is separated by "|".
+            The color codes are: R = red, G = green, B = blue
+            The area codes are: T = top, B = bottom, L = left, R = right, C = center,
+                                TL = top left, TR = top right, BL = bottom left,
+                                BR = bottom right
+            Color and area codes are case insensitiv.
+            Example: Rl2 -> red color of left area section 2
+                     Btl -> blue color of top left area
+                     xFF -> constant value 255
+                     
+            There are two predefined protocol sequences that could be specified as the
+            descriptor:
+            
+            classic -> "255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
+            df4ch   -> "255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
+                
+            In case you do not specifiy a protocol descriptor the "classic" protocol
+            will be used as default.
 
 speed:<baud>
-						Serial port transmission speed.
-						Supported values on Linux are: 1200,2400,4800,9600,19200,38400,57600,
-						                               115200,230400,460800
-						Supported values on Windows are: 1200,2400,4800,9600,19200,38400,57600,
-						                               115200,128000,256000
+            Serial port transmission speed.
+            Supported values on Linux are: 1200,2400,4800,9600,19200,38400,57600,
+                                           115200,230400,460800
+            Supported values on Windows are: 1200,2400,4800,9600,19200,38400,57600,
+                                           115200,128000,256000
 
 Example for a whole driver parameter:
 "COM5;speed:115200;proto=classic"
