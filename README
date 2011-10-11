@@ -402,11 +402,12 @@ proto:<descriptor>
                      Btl -> blue color of top left area
                      xFF -> constant value 255
                      
-            There are two predefined protocol sequences that could be specified as the
+            There are predefined protocol sequences that could be specified as the
             descriptor:
             
             classic -> "255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
             df4ch   -> "255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
+            amblone -> "xF4|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb|x33"
                 
             In case you do not specifiy a protocol descriptor the "classic" protocol
             will be used as default.
@@ -418,6 +419,12 @@ speed:<baud>
             Supported values on Windows are: 1200,2400,4800,9600,19200,38400,57600,
                                            115200,128000,256000
 
+amblone:
+			Enable protocol extensions for "amblone" controller (escape handling).
+			Protocol definition for this controller can be found here:
+				http://www.amblone.com/download/doc
+
+			
 Example for a whole driver parameter:
 "COM5;speed:115200;proto=classic"
 

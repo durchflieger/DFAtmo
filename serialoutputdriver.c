@@ -72,6 +72,7 @@ typedef struct {
   output_driver_t output_driver;
   atmo_parameters_t param;
   const char *protocol;
+  const uint8_t *escapes;
   dev_handle_t devfd;
   char driver_param[256];
 } serial_output_driver_t;
@@ -79,6 +80,9 @@ typedef struct {
 
 static const char *classic_proto = "255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
 static const char *df4ch_proto = "255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
+static const char *amblone_proto = "xF4|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb|x33";
+
+static const uint8_t amblone_escapes[] = { 0x99, 6, 0xF1, 0xF2, 0xF3, 0xF4, 0x33, 0x99 };
 
 
 static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
@@ -112,8 +116,12 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
           this->protocol = classic_proto;
         else if (!strcmp(v, "df4ch"))
           this->protocol = df4ch_proto;
+        else if (!strcmp(v, "amblone"))
+          this->protocol = amblone_proto;
         else
           this->protocol = v;
+      } else if (!strcmp(t, "amblone")) {
+          this->escapes = amblone_escapes;
 #ifndef WIN32
       } else if (!strcmp(t, "usb")) {
         usb = v;
@@ -444,6 +452,7 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
           area_num = area_num * 10 + c - '0';
         else if (c == '|' || !c) {
           int n, i;
+          uint8_t v;
           switch (area) {
           case TOP_AREA:
             i = 0;
@@ -487,17 +496,29 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
             i += area_num;
             switch (color) {
             case COLOR_RED:
-              *m = colors[i].r;
+              v = colors[i].r;
               break;
             case COLOR_GREEN:
-              *m = colors[i].g;
+              v = colors[i].g;
               break;
             default:
-              *m = colors[i].b;
+              v = colors[i].b;
             }
           } else
-            *m = 0;
-          ++m;
+            v = 0;
+          if (this->escapes) {
+            int n = this->escapes[1];
+            const uint8_t *p = &this->escapes[2];
+            while (n) {
+              if (v == *p) {
+                *m++ = this->escapes[0];
+                break;
+              }
+              ++p;
+              --n;
+            }
+          }
+          *m++ = v;
           state = START_STATE;
         } else
           err = SYNTAX_ERR;
