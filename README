@@ -163,6 +163,9 @@ in one step with:
 This generates the two deb packages "dfatmo" and "libxine-dfatmo-plugin". The
 "dfatmo" package also contains the XBMC addon zip file which will be installed
 to "/usr/lib/dfatmo".
+To build only the "dfatmo" package there exists a dedicated debian control
+file "debian/control-dfatmo-only". Copy this file to "debian/control" before
+executing the dpkg-buildpackage command.
   
   
 Additional patches located in sub directory 'patches':

@@ -1,0 +1,15 @@
+Source: dfatmo
+Section: libs
+Priority: extra
+Maintainer: Andreas Auras <yak54@inkennet.de>
+Build-Depends: debhelper (>= 7), libusb-1.0-0-dev, python2.6-dev
+Standards-Version: 3.8.3
+
+Package: dfatmo
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: DFAtmo the driver for 'Atmolight' controllers for XBMC and xinelib based video players
+ The DFAtmo driver analyze the video picture and generates
+ output data for so called 'Atmolight' controllers.
+ This package contains the native Python DFAtmo driver module, the native DFAtmo output drivers and
+ the DFAtmo XBMC addon installation zip file.
