@@ -29,28 +29,48 @@ DFATMOINCLDIR ?= $(DFATMOINSTDIR)/include
 
 XBMCADDONDIR ?= $(HOME)/.xbmc/addons/script.dfatmo
 
-CFLAGS ?= -O3 -pipe -Wall -fPIC -g
-LDFLAGS_SO ?= -shared -fvisibility=hidden
-
-XINEPLUGINDIR ?= $(shell pkg-config --variable=plugindir libxine)
-CFLAGS_XINE ?= $(shell pkg-config --cflags libxine )
-LIBS_XINE ?= $(shell pkg-config --libs libxine)
-
-CFLAGS_PYTHON ?= $(shell python-config --cflags)
-LIBS_PYTHON ?= $(shell python-config --libs)
-
-CFLAGS_USB ?= $(shell pkg-config --cflags libusb-1.0)
-LIBS_USB ?= $(shell pkg-config --libs libusb-1.0)
-
-XINEPOSTATMO = xineplug_post_dfatmo.so
 XBMCADDON = dfatmo-xbmc-addon.zip
 XBMCADDONWIN = dfatmo-xbmc-addon-win.zip
 XBMCADDONFILES = dfatmo.py addon.xml settings.xml mydriver.py icon.png
-OUTPUTDRIVERS = dfatmo-file.so dfatmo-serial.so dfatmo-df10ch.so
+
+OUTPUTDRIVERS = dfatmo-file.so dfatmo-serial.so
+
+XINEPOSTATMO = xineplug_post_dfatmo.so
+
+STD_BUILD_TARGETS = dfatmo
+STD_INSTALL_TARGETS = dfatmoinstall
+
+CFLAGS ?= -O3 -pipe -Wall -fPIC -g
+LDFLAGS_SO ?= -shared -fvisibility=hidden
+
+ifneq (NO, $(shell pkg-config --atleast-version=1.1.90 libxine || echo NO))
+HAVE_XINELIB = 1
+STD_BUILD_TARGETS += xineplugin
+STD_INSTALL_TARGETS += xineinstall
+XINEPLUGINDIR ?= $(shell pkg-config --variable=plugindir libxine)
+CFLAGS_XINE ?= $(shell pkg-config --cflags libxine )
+LIBS_XINE ?= $(shell pkg-config --libs libxine)
+endif
+
+ifneq (NO, $(shell bash -c "type -p python-config || echo NO"))
+HAVE_PYTHON=1
+ATMODRIVER = atmodriver.so
+STD_BUILD_TARGETS += xbmcaddon
+STD_INSTALL_TARGETS += xbmcinstall
+CFLAGS_PYTHON ?= $(shell python-config --cflags)
+LIBS_PYTHON ?= $(shell python-config --libs)
+endif
+
+ifneq (NO, $(shell pkg-config libusb-1.0 || echo NO))
+HAVE_LIBUSB=1
+OUTPUTDRIVERS += dfatmo-df10ch.so
+CFLAGS_USB ?= $(shell pkg-config --cflags libusb-1.0)
+LIBS_USB ?= $(shell pkg-config --libs libusb-1.0)
+endif
 
 .PHONY: all xineplugin xbmcaddon xbmcaddonwin dfatmo install xineinstall xbmcinstall dfatmoinstall clean
 
-all: dfatmo xineplugin xbmcaddon
+all: $(STD_BUILD_TARGETS)
 
 xineplugin: $(XINEPOSTATMO)
 
@@ -58,9 +78,9 @@ xbmcaddon: $(XBMCADDON)
 
 xbmcaddonwin: $(XBMCADDONWIN)
 
-dfatmo: atmodriver.so $(OUTPUTDRIVERS)
+dfatmo: $(ATMODRIVER) $(OUTPUTDRIVERS)
 
-install: xineinstall xbmcinstall dfatmoinstall
+install: $(STD_INSTALL_TARGETS)
 
 xineinstall: xineplugin
 	$(INSTALL) -m 0644 -t $(XINEPLUGINDIR)/post $(XINEPOSTATMO) 
@@ -77,7 +97,9 @@ xbmcinstall:
 
 dfatmoinstall: dfatmo
 	$(INSTALL) -m 0755 -d $(DFATMOLIBDIR)
-	$(INSTALL) -m 0644 -t $(DFATMOLIBDIR) atmodriver.so
+ifdef ATMODRIVER
+	$(INSTALL) -m 0644 -t $(DFATMOLIBDIR) $(ATMODRIVER)
+endif
 	$(INSTALL) -m 0755 -d $(DFATMOLIBDIR)/drivers
 	$(INSTALL) -m 0644 -t $(DFATMOLIBDIR)/drivers $(OUTPUTDRIVERS)
 	$(INSTALL) -m 0644 -t $(DFATMOINCLDIR) dfatmo.h
@@ -111,7 +133,7 @@ xineplug_post_dfatmo.so: xineplug_post_dfatmo.o
 atmodriver.o: atmodriver.c atmodriver.h dfatmo.h
 	$(CC) $(CFLAGS_PYTHON) $(CFLAGS) -DOUTPUT_DRIVER_PATH='"$(DFATMOLIBDIR)/drivers"' -c -o $@ $<
 
-atmodriver.so: atmodriver.o
+$(ATMODRIVER): atmodriver.o
 	$(CC) $(CFLAGS_PYTHON) $(CFLAGS) $(LDFLAGS_SO) $(LIBS_PYTHON) -lm -ldl -o $@ $<
 
 dfatmo-df10ch.o: df10choutputdriver.c dfatmo.h df10ch_usb_proto.h

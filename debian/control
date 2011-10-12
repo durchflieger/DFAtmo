@@ -2,16 +2,8 @@ Source: dfatmo
 Section: libs
 Priority: extra
 Maintainer: Andreas Auras <yak54@inkennet.de>
-Build-Depends: debhelper (>= 7), libxine-dev, libusb-1.0-0-dev, python2.6-dev
+Build-Depends: debhelper (>= 7), pkg-config, zip, libusb-1.0-0-dev, python2.6-dev, libxine-dev (>= 1.2)
 Standards-Version: 3.8.3
-
-Package: libxine-dfatmo-plugin
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, dfatmo
-Description: DFAtmo the driver for 'Atmolight' controllers for XBMC and xinelib based video players
- The DFAtmo xinelib post plugin analyze the video picture and generates
- output data for so called "atmolight" controllers.
- This package contains the DfAtmo xinelib post plugin.
 
 Package: dfatmo
 Architecture: any
@@ -21,3 +13,11 @@ Description: DFAtmo the driver for 'Atmolight' controllers for XBMC and xinelib 
  output data for so called 'Atmolight' controllers.
  This package contains the native Python DFAtmo driver module, the native DFAtmo output drivers and
  the DFAtmo XBMC addon installation zip file.
+
+Package: libxine-dfatmo-plugin
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, dfatmo
+Description: DFAtmo the driver for 'Atmolight' controllers for XBMC and xinelib based video players
+ The DFAtmo xinelib post plugin analyze the video picture and generates
+ output data for so called "atmolight" controllers.
+ This package contains the DfAtmo xinelib post plugin.
