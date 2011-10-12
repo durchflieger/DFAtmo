@@ -241,7 +241,7 @@ class CaptureThread(threading.Thread):
         self.outputDriver = None
 
     def start(self):
-        if self.setConfig(addon):
+        if self.setConfig(xbmcaddon.Addon()):
             if self.configure():
                 self.running = 1
                 threading.Thread.start(self)
@@ -537,7 +537,7 @@ def runService():
     runOk = False
     if dfAtmoInstDir:
         ad.driver_path = xbmc.translatePath(os.path.join(dfAtmoInstDir, 'drivers'))
-    if cd.setConfig(addon):
+    if cd.setConfig(xbmcaddon.Addon()):
         if cd.configure():
             cd.getConfig(xbmcaddon.Addon(), True)
             cd.run()
@@ -548,4 +548,6 @@ def runService():
 
 
 if ( __name__ == "__main__" ):
+    if not os.path.isfile(addonConfigFile):
+        addon.openSettings()
     runService()
