@@ -87,7 +87,7 @@ output drivers.
 For building the "atmodriver" module a python development environment is
 required. The challenge here is that the version of the python environment
 must be the same version your XBMC is compiled against.
-For ubuntu this is currently the ordinary platform packet "python2.6-dev".
+For ubuntu this is currently the ordinary platform packet "python-dev".
 For XBMC on Windows you currently have to download the XBMC source and
 build dependencies and use the python libs from the build dependencies.
 
@@ -121,14 +121,11 @@ For Windows the generated "atmodriver.pyd" should be installed within the DFAtmo
 XBMC addon script directory under "resources/lib.nt" and the output driver
 dll's under "resources/lib.nt/drivers". This currently has to be done manually.
 
-
-
 Building the DFAtmo XBMC addon as a installable zip file 'dfatmo-xbmc-addon.zip' for Linux:
   make xbmcaddon
 
 Direct installation to $HOME/.xbmc/addons for Linux with:
   make xbmcinstall
-  
   
 For Windows there exists a Makefile target to build a installable zip file
 "dfatmo-xbmc-addon-win.zip" which contains the addon and also the "atmodriver"
@@ -139,7 +136,6 @@ and output driver components. It could be executed from a cygwin environment:
 In the git repository you will find already a recent version of
 "dfatmo-xbmc-addon-win.zip" ready for installation.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
 
 For building the DFAtmo xinelib plugin you need a recent xine-lib-1.2
@@ -237,10 +233,7 @@ driver             none             Selects output driver. Currently supported a
                                     file     Write output data to file. Useful for 
                                              testing and debugging.
                                            
-                                    serial   Send output data to serial port. Standard
-                                             protocol is for "classic" Atmolight
-                                             2 channel controller. See:
-                                             http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
+                                    serial   Send output data to serial port.
                                              
                                     df10ch   Output driver for my own designed 
                                              DF10CH 10 channel Controller(s).
@@ -250,7 +243,9 @@ driver_param                        Parameter for output driver:
                                     file:    File name of output file. If not specified
                                              "atmo_data.out" is used.
                                              
-                                    serial:  Path to serial output device e.g. "/dev/ttyS0"
+                                    serial:  Path to serial output device.
+                                             Default is "/dev/ttyS0" for Linux and "COM1"
+                                             for Windows.
                                              See description for serial output driver for
                                              further options.
 
@@ -313,7 +308,7 @@ hue_win_size *     3                Windowing size for HUE. Valid values 0 ... 5
 
 sat_win_size *     3                Windowing size for saturation. Valid values 0 ... 5
 
-hue_treshold  *     93                Threshold limit for change of color.
+hue_treshold  *     93              Threshold limit for change of color.
                                     Unit percentage of 100. Valid values 1 ... 100
                                      
 brightness  *      100              Controls brightness of generated color values.
@@ -413,21 +408,23 @@ proto:<descriptor>
             amblone -> "xF4|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb|x33"
                 
             In case you do not specifiy a protocol descriptor the "classic" protocol
-            will be used as default.
+            for Atmolight 2 channel controller will be used as default.
+            Protocol definition for this controller can be found here:
+                http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
 
 speed:<baud>
-            Serial port transmission speed.
+            Serial port transmission speed. Default is 38400.
             Supported values on Linux are: 1200,2400,4800,9600,19200,38400,57600,
                                            115200,230400,460800
             Supported values on Windows are: 1200,2400,4800,9600,19200,38400,57600,
                                            115200,128000,256000
 
 amblone:
-			Enable protocol extensions for "amblone" controller (escape handling).
-			Protocol definition for this controller can be found here:
-				http://www.amblone.com/download/doc
+      Enable protocol extensions for "amblone" controller (escape handling).
+      Protocol definition for this controller can be found here:
+          http://www.amblone.com/download/doc
 
-			
+
 Example for a whole driver parameter:
 "COM5;speed:115200;proto=classic"
 
@@ -440,4 +437,4 @@ The python module should be store in the DFAtmo XBMC addon directory under
 There is already a example driver called "mydriver" that writes a file with color data
 similar to the native file output driver. The name of the file is specified
 in the "Driver parameters" field.
-                     
+
