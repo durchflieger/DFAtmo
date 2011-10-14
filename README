@@ -404,11 +404,11 @@ proto:<descriptor>
             descriptor:
             
             
-            classic -> "255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb"
+            classic -> 255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb
                        areas: Center, Left 1, Right 1, Top 1, Bottom 1
                        
-            df4ch   -> "255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
-            amblone -> "xF4|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb|x33"
+            df4ch   -> 255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb
+            amblone -> xF4|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb|x33
                        areas: Left 1, Right 1, Top 1, Bottom 1
                        
             In case you do not specifiy a protocol descriptor the "classic" protocol
@@ -424,9 +424,9 @@ speed:<baud>
                                            115200,128000,256000
 
 amblone:
-      Enable protocol extensions for "amblone" controller (escape handling).
-      Protocol definition for this controller can be found here:
-          http://www.amblone.com/download/doc
+            Enable protocol extensions for "amblone" controller (escape handling).
+            Protocol definition for this controller can be found here:
+                http://www.amblone.com/download/doc
 
 
 Example for a whole driver parameter:
