@@ -179,7 +179,7 @@ static void calc_weight(atmo_driver_t *this) {
   uint8_t *weight = this->weight;
   const int width = this->analyze_width;
   const int height = this->analyze_height;
-  const double w = this->edge_weighting > 10 ? (double)this->edge_weighting / 10.0: 10.0;
+  const double w = this->edge_weighting > 10 ? (double)this->edge_weighting / 10.0: 1.0;
   const int top_channels = this->active_parm.top;
   const int bottom_channels = this->active_parm.bottom;
   const int left_channels = this->active_parm.left;
