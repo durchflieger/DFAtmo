@@ -8,10 +8,10 @@
 	</category>
 	
 	<category label="Areas">
-	    <setting id="top" type="number" label="Areas at top border" default="0" />
-	    <setting id="bottom" type="number" label="Areas at bottom border" default="0" />
-	    <setting id="left" type="number" label="Areas at left border"  default="0" />
-	    <setting id="right" type="number" label="Areas at right border" default="0" />
+	    <setting id="top" type="number" label="Sections at top area" default="0" />
+	    <setting id="bottom" type="number" label="Sections at bottom area" default="0" />
+	    <setting id="left" type="number" label="Sections at left area"  default="0" />
+	    <setting id="right" type="number" label="Sections at right area" default="0" />
 		<setting id="top_left" label="Activate top left area" type="bool" default="false"/>
 		<setting id="top_right" label="Activate top right area" type="bool" default="false"/>
 		<setting id="bottom_left" label="Activate bottom left area" type="bool" default="false"/>
