@@ -185,6 +185,23 @@ class OutputThread(threading.Thread):
         self.running = False
         self.join(0.5)
 
+    def reopen(self):
+        try:
+            self.outputDriver.closeOutputDriver();
+        except atmodriver.error as err:
+            pass
+
+        try:
+            if self.outputDriver == self.atmoDriver:
+                self.atmoDriver.configure()
+            else:
+                self.outputDriver.openOutputDriver()
+                self.outputDriver.turnLightsOff()
+        except atmodriver.error as err:
+            displayNotification(LOG_ERROR, err)
+            return False
+        return True
+    
     def run(self):
         log(LOG_INFO, "output thread running")
         cd = self.captureDriver
@@ -196,6 +213,7 @@ class OutputThread(threading.Thread):
         outputStartTime = 0.0
         lightsOn = False
         outputCount = 0
+        writeFailureRetry = False
         try:
             ad.resetFilters()
             while self.running:
@@ -217,8 +235,19 @@ class OutputThread(threading.Thread):
                         outputCount = 0
                     colors = ad.filterAnalyzedColors(colors)
                     colors = ad.filterOutputColors(colors)
-                    od.outputColors(colors)
-                    outputCount = outputCount + 1
+                    try:
+                        od.outputColors(colors)
+                        writeFailureRetry = False
+                        outputCount = outputCount + 1
+                    except atmodriver.error as err:
+                        if writeFailureRetry:
+                            raise
+                        else:
+                            log(LOG_INFO, "try to recover after possible system suspend")
+                            writeFailureRetry = True
+                            lightsOn = False
+                            if not self.reopen():
+                                break
             if lightsOn:
                 od.turnLightsOff()
                 if outputCount:
@@ -417,23 +446,6 @@ class CaptureThread(threading.Thread):
                 return False
         return True
 
-    def reopen(self):
-        try:
-            self.outputDriver.closeOutputDriver();
-        except atmodriver.error as err:
-            pass
-
-        try:
-            if self.outputDriver == self.atmoDriver:
-                self.atmoDriver.configure()
-            else:
-                self.outputDriver.openOutputDriver()
-                self.outputDriver.turnLightsOff()
-        except atmodriver.error as err:
-            displayNotification(LOG_ERROR, err)
-            return False
-        return True
-    
     def run(self):
         player = xbmc.Player()
         capture = xbmc.RenderCapture()
@@ -498,8 +510,6 @@ class CaptureThread(threading.Thread):
             if player.isPlayingVideo():
                 if not videoPlaying:
                     log(LOG_INFO, "start playing video: aspect ratio: %.4f" % capture.getAspectRatio())
-                    if not self.reopen():
-                        return
                     videoPlaying = True
                     videoStartTime = time.time()
                     captureCount = 0
