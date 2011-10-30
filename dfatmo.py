@@ -417,6 +417,23 @@ class CaptureThread(threading.Thread):
                 return False
         return True
 
+    def reopen(self):
+        try:
+            self.outputDriver.closeOutputDriver();
+        except atmodriver.error as err:
+            pass
+
+        try:
+            if self.outputDriver == self.atmoDriver:
+                self.atmoDriver.configure()
+            else:
+                self.outputDriver.openOutputDriver()
+                self.outputDriver.turnLightsOff()
+        except atmodriver.error as err:
+            displayNotification(LOG_ERROR, err)
+            return False
+        return True
+    
     def run(self):
         player = xbmc.Player()
         capture = xbmc.RenderCapture()
@@ -480,8 +497,10 @@ class CaptureThread(threading.Thread):
             
             if player.isPlayingVideo():
                 if not videoPlaying:
-                    videoPlaying = True
                     log(LOG_INFO, "start playing video: aspect ratio: %.4f" % capture.getAspectRatio())
+                    if not self.reopen():
+                        return
+                    videoPlaying = True
                     videoStartTime = time.time()
                     captureCount = 0
                     self.analyzedColors = None
