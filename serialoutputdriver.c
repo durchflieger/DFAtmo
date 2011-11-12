@@ -258,10 +258,7 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
 #else
   struct termios tio;
   memset(&tio, 0, sizeof(tio));
-  tio.c_cflag = (CS8 | CREAD | CLOCAL);
-  tio.c_cc[VMIN] = 0;
-  tio.c_cc[VTIME] = 1;
-  cfsetispeed(&tio, bspeed);
+  tio.c_cflag = (CS8 | CSTOPB | CLOCAL);
   cfsetospeed(&tio, bspeed);
   ok = (tcsetattr(devfd, TCSANOW, &tio) == 0);
   if (ok)
