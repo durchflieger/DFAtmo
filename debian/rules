@@ -45,6 +45,9 @@ build-stamp: configure-stamp
 	dh_testdir
 	# Add here commands to compile the package.
 	$(MAKE) DFATMOINSTDIR="/usr"
+ifdef XINEPLUGINDIR
+	echo "xineplug_post_dfatmo.so $(XINEPLUGINDIR)/post/" > debian/libxine-dfatmo-plugin.install
+endif
 	touch $@
 
 clean: 
@@ -54,6 +57,7 @@ clean:
 	# Add here commands to clean up after the build process.
 	$(MAKE) clean
 	dh_clean 
+	rm -f debian/libxine-dfatmo-plugin.install
 
 install: build
 	dh_testdir
@@ -61,9 +65,6 @@ install: build
 	dh_prep  
 	dh_installdirs
 	# Add here commands to install the package.
-ifdef XINEPLUGINDIR
-	dh_install xineplug_post_dfatmo.so $(XINEPLUGINDIR)/post/
-endif
 
 # Build architecture-independent files here.
 binary-indep: install
