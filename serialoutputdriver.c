@@ -81,6 +81,7 @@ typedef struct {
 static const char *classic_proto = "255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
 static const char *df4ch_proto = "255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb";
 static const char *amblone_proto = "xF4|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb|x33";
+static const char *karate_proto = "xAA|x12|CX|24|Gl|Bl|Rl|Gr|Br|Rr|Gt|Bt|Rt|Gb|Bb|Rb|Gl2|Bl2|Rl2|Gr2|Br2|Rr2|Gt2|Bt2|Rt2|Gb2|Bb2|Rb2";
 
 static const uint8_t amblone_escapes[] = { 0x99, 6, 0xF1, 0xF2, 0xF3, 0xF4, 0x33, 0x99 };
 
@@ -118,6 +119,8 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
           this->protocol = df4ch_proto;
         else if (!strcmp(v, "amblone"))
           this->protocol = amblone_proto;
+        else if (!strcmp(v, "karatelight"))
+          this->protocol = karate_proto;
         else
           this->protocol = v;
       } else if (!strcmp(t, "amblone")) {
@@ -307,10 +310,13 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
   dev_size_t len, written;
   enum { TOP_AREA, BOTTOM_AREA, LEFT_AREA, RIGHT_AREA, CENTER_AREA, TOP_LEFT_AREA, TOP_RIGHT_AREA, BOTTOM_LEFT_AREA, BOTTOM_RIGHT_AREA };
   enum { COLOR_RED, COLOR_GREEN, COLOR_BLUE };
-  enum { START_STATE, DEC_CONST_STATE, HEX_CONST_STATE, AREA_STATE, AREA_NUM_STATE };
-  enum { NO_ERR, SYNTAX_ERR, DATA_ERR, LENGTH_ERR };
+  enum { START_STATE, DEC_CONST_STATE, HEX_CONST_STATE, AREA_STATE, AREA_NUM_STATE, CRC_STATE };
+  enum { NO_ERR, SYNTAX_ERR, DATA_ERR, LENGTH_ERR, CRC_MODE_ERR };
+  enum { ERR_CRC_MODE, XOR_CRC_MODE };
   int state = START_STATE;
   int err = NO_ERR;
+  int crc_mode = ERR_CRC_MODE;
+  uint8_t *crc_pos = NULL;
 
   if (this->devfd == INVALID_DEV_HANDLE)
     return -1;
@@ -344,12 +350,38 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
         color = COLOR_BLUE;
         state = AREA_STATE;
         break;
+      case 'c':
+      case 'C':
+        state = CRC_STATE;
+        break;
       default:
         if (c >= '0' && c <= '9') {
           data = c - '0';
           state = DEC_CONST_STATE;
         } else
           err = SYNTAX_ERR;
+      }
+      break;
+
+    case CRC_STATE:
+      switch (c)
+      {
+      case 'x':
+      case 'X':
+        crc_mode = XOR_CRC_MODE;
+        break;
+      case '|':
+      case 0:
+        if (crc_mode == ERR_CRC_MODE)
+          err = CRC_MODE_ERR;
+        else
+        {
+          crc_pos = m++;
+          state = START_STATE;
+        }
+        break;
+      default:
+        err = SYNTAX_ERR;
       }
       break;
 
@@ -542,8 +574,24 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
       break;
     case LENGTH_ERR:
       snprintf(this->output_driver.errmsg, sizeof(this->output_driver.errmsg), "message to long");
+      break;
+    case CRC_MODE_ERR:
+      snprintf(this->output_driver.errmsg, sizeof(this->output_driver.errmsg), "missing crc mode");
     }
     return -1;
+  }
+
+  if (crc_pos != NULL)
+  {
+    uint8_t *v = msg;
+    uint8_t crc = 0;
+    while (v < m)
+    {
+      if (v != crc_pos)
+        crc ^= *v;
+      ++v;
+    }
+    *crc_pos = crc;
   }
 
   len = (dev_size_t)(m - msg);

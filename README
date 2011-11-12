@@ -388,14 +388,23 @@ proto:<descriptor>
             Protocol descriptor string that describes the byte sequence that is send to
             the Atmolight controller.
             For each byte position within the sequence you can specify a constant value 
-            (decimal or hexadecimal) or a color variable. The name for the color variable
-            consists of the color code, area code and optional the section number. Section
-            numbers start from 1. Each byte position is separated by "|".
+            (decimal or hexadecimal), a color variable or a checksum variable.
+            The name for the color variable consists of the color code, area code and
+            optional the section number. Section numbers start from 1.
+            Each byte position is separated by "|" and all letters are case insensitiv.
+            Do not include any whitespace within the descriptor string.
+
             The color codes are: R = red, G = green, B = blue
+
             The area codes are: T = top, B = bottom, L = left, R = right, C = center,
                                 TL = top left, TR = top right, BL = bottom left,
                                 BR = bottom right
-            Color and area codes are case insensitiv.
+
+            The checksum variables are: CX = One byte XOR checksum over all bytes of the
+                                             sequence excluding the checksum byte.
+                                             (The karatelight controller expected this
+                                             checksum at byte position 3) 
+
             Example: Rl2 -> red color of left area section 2
                      Btl -> blue color of top left area
                      xFF -> constant value 255
@@ -403,14 +412,19 @@ proto:<descriptor>
             There are predefined protocol sequences that could be specified as the
             descriptor:
             
-            
             classic -> 255|0|0|15|Rc|Gc|Bc|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb
                        areas: Center, Left 1, Right 1, Top 1, Bottom 1
                        
             df4ch   -> 255|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb
+                       areas: Left 1, Right 1, Top 1, Bottom 1
+            
             amblone -> xF4|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb|x33
                        areas: Left 1, Right 1, Top 1, Bottom 1
-                       
+            
+            karatelight -> xAA|x12|CX|24|Gl|Bl|Rl|Gr|Br|Rr|Gt|Bt|Rt|Gb|Bb|Rb|Gl2|Bl2|Rl2|Gr2|Br2|Rr2|Gt2|Bt2|Rt2|Gb2|Bb2|Rb2
+                           areas: Left 1, Right 1, Top 1, Bottom 1, Left 2, Right 2, Top 2, Bottom 2
+                           Note: Karatelight expected the number of colors in sequence at byte position 4.
+                                                
             In case you do not specifiy a protocol descriptor the "classic" protocol
             for Atmolight 2 channel controller will be used as default.
             Protocol definition for this controller can be found here:
@@ -418,8 +432,10 @@ proto:<descriptor>
 
 speed:<baud>
             Serial port transmission speed. Default is 38400.
+            
             Supported values on Linux are: 1200,2400,4800,9600,19200,38400,57600,
                                            115200,230400,460800
+                                           
             Supported values on Windows are: 1200,2400,4800,9600,19200,38400,57600,
                                            115200,128000,256000
 
@@ -429,8 +445,9 @@ amblone:
                 http://www.amblone.com/download/doc
 
 
-Example for a whole driver parameter:
+Examples of driver parameter:
 "COM5;speed:115200;proto:classic"
+"/dev/ttyUSB0;speed:57600;proto:255|0|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb"
 
 
 The DFAtmo XBMC addon supports output drivers written as python scripts. To use such a
