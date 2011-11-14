@@ -253,7 +253,7 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
     if (ok) {
       dcbSerialParams.BaudRate = bspeed;
       dcbSerialParams.ByteSize = 8;
-      dcbSerialParams.StopBits = ONESTOPBIT;
+      dcbSerialParams.StopBits = TWOSTOPBITS;
       dcbSerialParams.Parity = NOPARITY;
       ok = SetCommState(devfd, &dcbSerialParams);
     }
