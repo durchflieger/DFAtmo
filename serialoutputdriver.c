@@ -103,7 +103,7 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
 
   /* parse driver parameter */
   strncpy(this->driver_param, this->param.driver_param, sizeof(this->driver_param));
-  t = strtok_r(this->driver_param, ";", &tp);
+  t = strtok_r(this->driver_param, ";&", &tp);
   while (t != NULL) {
     char *v = strchr(t, ':');
     if (v == NULL)
@@ -134,7 +134,7 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
         return -1;
       }
     }
-    t = strtok_r(NULL, ";", &tp);
+    t = strtok_r(NULL, ";&", &tp);
   }
 
   if (usb == NULL && (devname == NULL || strspn(devname, " ") == strlen(devname)))

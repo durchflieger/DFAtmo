@@ -375,7 +375,7 @@ For some parameters (e.g. filter parameters) you will find a more detailed descr
 
 The serial output driver understood some more options within the "driver_param" parameter.
 These options are applied as keyword/value pairs seperated by a colon. Several options
-are separated by semikolon.
+are separated by ampersand.
 
 usb:<expr>
             For users with usb-to-serial converters the device could be specified as a
@@ -446,8 +446,8 @@ amblone:
 
 
 Examples of driver parameter:
-"COM5;speed:115200;proto:classic"
-"/dev/ttyUSB0;speed:57600;proto:255|0|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb"
+"COM5&speed:115200&proto:classic"
+"/dev/ttyUSB0&speed:57600&proto:255|0|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb"
 
 
 The DFAtmo XBMC addon supports output drivers written as python scripts. To use such a
