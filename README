@@ -102,7 +102,7 @@ For windows you need a very recent version with windows support from here:
 
 Before compiling the components you should decide at which place they should
 be installed. This is controlled by the DFATMOINSTDIR make variable and the
-default for Linux is "/usr/local". Please not that the XBMC addon currently
+default for Linux is "/usr/local". Please note that the XBMC addon currently
 searches the components under "/usr" and "/usr/local". So you should use
 one of these locations.
 
@@ -284,7 +284,7 @@ analyze_size *     1                Size of analyze window. The window width is 
                                     from the controller configuration data. Use the DF10CH setup program to configure your
                                     desired analyze size.
                                     
-overscan *         30               Ignored overscan border of grabbed video frame.
+overscan *         0                Ignored overscan border of grabbed video frame.
                                     Unit is percentage of 1000. e.g. 30 -> 3%
                                     Valid values: 0 ... 200
 
