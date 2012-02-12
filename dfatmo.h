@@ -38,13 +38,16 @@
 
 #define NUM_AREAS                9      /* Number of different areas (top, bottom ...) */
 #define MAX_BORDER_CHANNELS     128     /* Maximum number of channels for a border */
+#define SIZE_DRIVER_NAME        16      /* Maximum size of driver name */
+#define SIZE_DRIVER_PATH        128     /* Maximum size of driver path */
+#define SIZE_DRIVER_PARAM       2048    /* Maximum size of driver parameter string */
 
 typedef struct { uint8_t r, g, b; } rgb_color_t;
 
 typedef struct {
-  char driver[16];
-  char driver_param[256];
-  char driver_path[128];
+  char driver[SIZE_DRIVER_NAME];
+  char driver_param[SIZE_DRIVER_PARAM];
+  char driver_path[SIZE_DRIVER_PATH];
   int top;
   int bottom;
   int left;
@@ -81,7 +84,7 @@ typedef struct {
 /*
  * abstraction for output drivers
  */
-#define DFATMO_OUTPUT_DRIVER_VERSION    1
+#define DFATMO_OUTPUT_DRIVER_VERSION    2
 
 typedef struct output_driver_s output_driver_t;
 struct output_driver_s {

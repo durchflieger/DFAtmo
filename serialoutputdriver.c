@@ -74,7 +74,7 @@ typedef struct {
   const char *protocol;
   const uint8_t *escapes;
   dev_handle_t devfd;
-  char driver_param[256];
+  char driver_param[SIZE_DRIVER_PARAM];
 } serial_output_driver_t;
 
 
@@ -234,6 +234,39 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
       break;
     case 460800:
       bspeed = SPEED_CONST(460800);
+      break;
+    case 500000:
+      bspeed = SPEED_CONST(500000);
+      break;
+    case 576000:
+      bspeed = SPEED_CONST(576000);
+      break;
+    case 921600:
+      bspeed = SPEED_CONST(921600);
+      break;
+    case 1000000:
+      bspeed = SPEED_CONST(1000000);
+      break;
+    case 1152000:
+      bspeed = SPEED_CONST(1152000);
+      break;
+    case 1500000:
+      bspeed = SPEED_CONST(1500000);
+      break;
+    case 2000000:
+      bspeed = SPEED_CONST(2000000);
+      break;
+    case 2500000:
+      bspeed = SPEED_CONST(2500000);
+      break;
+    case 3000000:
+      bspeed = SPEED_CONST(3000000);
+      break;
+    case 3500000:
+      bspeed = SPEED_CONST(3500000);
+      break;
+    case 4000000:
+      bspeed = SPEED_CONST(4000000);
       break;
 #endif
     default:
