@@ -336,7 +336,7 @@ static void serial_driver_dispose(output_driver_t *this_gen) {
 
 static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *colors, rgb_color_t *last_colors) {
   serial_output_driver_t *this = (serial_output_driver_t *) this_gen;
-  uint8_t msg[256];
+  uint8_t msg[512];
   uint8_t *m = msg;
   int data = 0, area = 0, area_num = 0, color = 0;
   const char *p = this->protocol;
