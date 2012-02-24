@@ -118,6 +118,7 @@ $(XBMCADDONWIN): $(XBMCADDONFILES)
 	-rm -f $(XBMCADDONWIN)
 	-rm -rf ./build
 	$(MAKE) xbmcinstall XBMCADDONDIR=./build/script.dfatmo
+	$(INSTALL) -m 0644 README build/script.dfatmo/readme.txt
 	$(INSTALL) -m 0755 -d build/script.dfatmo/resources/lib.nt
 	$(INSTALL) -m 0644 -t build/script.dfatmo/resources/lib.nt project/release/atmodriver.pyd
 	$(INSTALL) -m 0755 -d build/script.dfatmo/resources/lib.nt/drivers
