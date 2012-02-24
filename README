@@ -31,8 +31,10 @@ mechanism for output drivers. These output drivers are implemented as shared
 libraries and are loaded dynamically at runtime.
 Furthermore the python script based DFAtmo XBMC addon supports another plugin
 mechanism for output drivers which are implemented as python scripts.
-Currently there are output drivers implemented for the "classic" Atmolight
-controller and my own designed DF10CH "next generation" controller.
+Currently there are output drivers implemented for controllers where the
+communication is based on a serial port like the "classic" Atmolight
+controller and for my own designed DF10CH "next generation" controller where
+communication is done to over a proprietary USB protocol.
 
 For debugging proposes there exists another output driver that is able to write
 the color data to a file in a human readable layout.
@@ -329,6 +331,24 @@ uniform_brightness * 0              Enable/Disable uniform brightness calculatio
 filter *           combined         Select smoothness filter. Currently there are two filters
                                     supported: percentage and combined.
                                     Valid values: off, percentage, combined
+                                   
+                                    For every full video frame color values are calculated. To avoid flickering a kind of
+                                    average is formed between the found colors.
+
+                                    filter=percentage: Every anew calculated color value contributes a certain percentage
+                                    to the indicated color. This contribution can be configured with the parameter
+                                    'filter_smoothness'. Often this filter looks very nervous, but also wonderfully spontaneous.
+
+                                    filter=combined: A running average from the calculated colors is formed. For which time
+                                    span the average will be formed can be configured with parameter 'filter_length'.
+                                    Greater values will result in more slowly fading to new colors. In addition, it is
+                                    supervised whether there is a jump in the calculated color values (for example, within a
+                                    scene change). A jump is recognized if the new color has the distance of the parameter
+                                    'filter_threshold' from the average color. Greater values will result in more seldom
+                                    recognized jumps. If a jump is recognized, the indicated color is corrected immediately
+                                    to the new value. If no jump was recognized, the 'percentage' filter is used again and
+                                    provides for a slightly gentle crossing. Greater values of parameter 'filter_smoothness' will
+                                    result in a more softly crossing.
 
 filter_smoothness * 50              Controls filter smoothness of percentage filter.
                                     Unit percentage of 100. Valid values 1 ... 100
@@ -367,11 +387,6 @@ start_delay *      250              Delay after stream start before first output
 enabled *          1                Enable/Disable output of color values to atmolight controller.
                                     Valid values: 0 (disable), 1 (enable)
         
-
-
-For some parameters (e.g. filter parameters) you will find a more detailed description here:
-  http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
-
 
 The serial output driver understood some more options within the "driver_param" parameter.
 These options are applied as keyword/value pairs seperated by a colon. Several options
