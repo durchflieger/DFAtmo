@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2011 Andreas Auras <yak54@inkennet.de>
+ * Copyright (C) 2012 Andreas Auras <yak54@inkennet.de>
  *
- * This file is part of DFAtmo the driver for 'Atmolight' controllers for XBMC and xinelib based video players.
+ * This file is part of DFAtmo the driver for 'Atmolight' controllers for VDR, XBMC and xinelib based video players.
  *
  * DFAtmo is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,10 +81,7 @@ typedef const char* lib_error_t;
 #define MAX(X, Y)  ((X) > (Y) ? (X) : (Y))
 #define POS_DIV(a, b)  ( (a)/(b) + ( ((a)%(b) >= (b)/2 ) ? 1 : 0) )
 
-#define FILTER_NONE             0
-#define FILTER_PERCENTAGE       1
-#define FILTER_COMBINED         2
-#define NUM_FILTERS             2
+enum { FILTER_NONE = 0, FILTER_PERCENTAGE, FILTER_COMBINED, NUM_FILTERS };
 
 typedef struct { uint8_t h, s, v; } hsv_color_t;
 typedef struct { uint64_t r, g, b; } rgb_color_sum_t;
@@ -174,21 +171,21 @@ static inline void rgb_to_hsv(hsv_color_t *hsv, int r, int g, int b) {
 }
 
 
-static void calc_weight(atmo_driver_t *this) {
+static void calc_weight(atmo_driver_t *self) {
   int row, col, c;
-  uint8_t *weight = this->weight;
-  const int width = this->analyze_width;
-  const int height = this->analyze_height;
-  const double w = this->edge_weighting > 10 ? (double)this->edge_weighting / 10.0: 1.0;
-  const int top_channels = this->active_parm.top;
-  const int bottom_channels = this->active_parm.bottom;
-  const int left_channels = this->active_parm.left;
-  const int right_channels = this->active_parm.right;
-  const int center_channel = this->active_parm.center;
-  const int top_left_channel = this->active_parm.top_left;
-  const int top_right_channel = this->active_parm.top_right;
-  const int bottom_left_channel = this->active_parm.bottom_left;
-  const int bottom_right_channel = this->active_parm.bottom_right;
+  uint8_t *weight = self->weight;
+  const int width = self->analyze_width;
+  const int height = self->analyze_height;
+  const double w = self->edge_weighting > 10 ? (double)self->edge_weighting / 10.0: 1.0;
+  const int top_channels = self->active_parm.top;
+  const int bottom_channels = self->active_parm.bottom;
+  const int left_channels = self->active_parm.left;
+  const int right_channels = self->active_parm.right;
+  const int center_channel = self->active_parm.center;
+  const int top_left_channel = self->active_parm.top_left;
+  const int top_right_channel = self->active_parm.top_right;
+  const int bottom_left_channel = self->active_parm.bottom_left;
+  const int bottom_right_channel = self->active_parm.bottom_right;
 
   const int sum_top_channels = top_channels + top_left_channel + top_right_channel;
   const int sum_bottom_channels = bottom_channels + bottom_left_channel + bottom_right_channel;
@@ -244,13 +241,13 @@ static void calc_weight(atmo_driver_t *this) {
 }
 
 
-static void calc_hue_hist(atmo_driver_t *this) {
-  hsv_color_t *hsv = this->hsv_img;
-  uint8_t *weight = this->weight;
-  int img_size = this->img_size;
-  const int n = this->sum_channels;
-  uint64_t * const hue_hist = this->hue_hist;
-  const int darkness_limit = this->active_parm.darkness_limit;
+static void calc_hue_hist(atmo_driver_t *self) {
+  hsv_color_t *hsv = self->hsv_img;
+  uint8_t *weight = self->weight;
+  int img_size = self->img_size;
+  const int n = self->sum_channels;
+  uint64_t * const hue_hist = self->hue_hist;
+  const int darkness_limit = self->active_parm.darkness_limit;
 
   memset(hue_hist, 0, (n * (h_MAX+1) * sizeof(uint64_t)));
 
@@ -266,12 +263,12 @@ static void calc_hue_hist(atmo_driver_t *this) {
 }
 
 
-static void calc_windowed_hue_hist(atmo_driver_t *this) {
+static void calc_windowed_hue_hist(atmo_driver_t *self) {
   int i, c, w;
-  const int n = this->sum_channels;
-  uint64_t * const hue_hist = this->hue_hist;
-  uint64_t * const w_hue_hist = this->w_hue_hist;
-  const int hue_win_size = this->active_parm.hue_win_size;
+  const int n = self->sum_channels;
+  uint64_t * const hue_hist = self->hue_hist;
+  uint64_t * const w_hue_hist = self->w_hue_hist;
+  const int hue_win_size = self->active_parm.hue_win_size;
   uint64_t win_weight;
 
   memset(w_hue_hist, 0, (n * (h_MAX+1) * sizeof(uint64_t)));
@@ -296,12 +293,12 @@ static void calc_windowed_hue_hist(atmo_driver_t *this) {
 }
 
 
-static void calc_most_used_hue(atmo_driver_t *this) {
-  const int n = this->sum_channels;
-  uint64_t * const w_hue_hist = this->w_hue_hist;
-  int * const most_used_hue = this->most_used_hue;
-  int * const last_most_used_hue = this->last_most_used_hue;
-  const double hue_threshold = (double)this->active_parm.hue_threshold / 100.0;
+static void calc_most_used_hue(atmo_driver_t *self) {
+  const int n = self->sum_channels;
+  uint64_t * const w_hue_hist = self->w_hue_hist;
+  int * const most_used_hue = self->most_used_hue;
+  int * const last_most_used_hue = self->last_most_used_hue;
+  const double hue_threshold = (double)self->active_parm.hue_threshold / 100.0;
   int i, c;
 
   memset(most_used_hue, 0, (n * sizeof(int)));
@@ -322,15 +319,15 @@ static void calc_most_used_hue(atmo_driver_t *this) {
 }
 
 
-static void calc_sat_hist(atmo_driver_t *this) {
-  hsv_color_t *hsv = this->hsv_img;
-  uint8_t *weight = this->weight;
-  int img_size = this->img_size;
-  const int n = this->sum_channels;
-  uint64_t * const sat_hist = this->sat_hist;
-  int * const most_used_hue = this->most_used_hue;
-  const int darkness_limit = this->active_parm.darkness_limit;
-  const int hue_win_size = this->active_parm.hue_win_size;
+static void calc_sat_hist(atmo_driver_t *self) {
+  hsv_color_t *hsv = self->hsv_img;
+  uint8_t *weight = self->weight;
+  int img_size = self->img_size;
+  const int n = self->sum_channels;
+  uint64_t * const sat_hist = self->sat_hist;
+  int * const most_used_hue = self->most_used_hue;
+  const int darkness_limit = self->active_parm.darkness_limit;
+  const int hue_win_size = self->active_parm.hue_win_size;
 
   memset(sat_hist, 0, (n * (s_MAX+1) * sizeof(uint64_t)));
 
@@ -349,12 +346,12 @@ static void calc_sat_hist(atmo_driver_t *this) {
 }
 
 
-static void calc_windowed_sat_hist(atmo_driver_t *this) {
+static void calc_windowed_sat_hist(atmo_driver_t *self) {
   int i, c, w;
-  const int n = this->sum_channels;
-  uint64_t * const sat_hist = this->sat_hist;
-  uint64_t * const w_sat_hist = this->w_sat_hist;
-  const int sat_win_size = this->active_parm.sat_win_size;
+  const int n = self->sum_channels;
+  uint64_t * const sat_hist = self->sat_hist;
+  uint64_t * const w_sat_hist = self->w_sat_hist;
+  const int sat_win_size = self->active_parm.sat_win_size;
   uint64_t win_weight;
 
   memset(w_sat_hist, 0, (n * (s_MAX+1) * sizeof(uint64_t)));
@@ -379,10 +376,10 @@ static void calc_windowed_sat_hist(atmo_driver_t *this) {
 }
 
 
-static void calc_most_used_sat(atmo_driver_t *this) {
-  const int n = this->sum_channels;
-  uint64_t * const w_sat_hist = this->w_sat_hist;
-  int * const most_used_sat = this->most_used_sat;
+static void calc_most_used_sat(atmo_driver_t *self) {
+  const int n = self->sum_channels;
+  uint64_t * const w_sat_hist = self->w_sat_hist;
+  int * const most_used_sat = self->most_used_sat;
   int i, c;
 
   memset(most_used_sat, 0, (n * sizeof(int)));
@@ -399,15 +396,15 @@ static void calc_most_used_sat(atmo_driver_t *this) {
 }
 
 
-static void calc_average_brightness(atmo_driver_t *this) {
-  hsv_color_t *hsv = this->hsv_img;
-  uint8_t *weight = this->weight;
-  int img_size = this->img_size;
-  const int n = this->sum_channels;
-  const int darkness_limit = this->active_parm.darkness_limit;
-  const uint64_t bright = this->active_parm.brightness;
-  uint64_t * const avg_bright = this->avg_bright;
-  int * const avg_cnt = this->avg_cnt;
+static void calc_average_brightness(atmo_driver_t *self) {
+  hsv_color_t *hsv = self->hsv_img;
+  uint8_t *weight = self->weight;
+  int img_size = self->img_size;
+  const int n = self->sum_channels;
+  const int darkness_limit = self->active_parm.darkness_limit;
+  const uint64_t bright = self->active_parm.brightness;
+  uint64_t * const avg_bright = self->avg_bright;
+  int * const avg_cnt = self->avg_cnt;
   int c;
 
   memset(avg_bright, 0, (n * sizeof(uint64_t)));
@@ -435,14 +432,14 @@ static void calc_average_brightness(atmo_driver_t *this) {
 }
 
 
-static void calc_uniform_average_brightness(atmo_driver_t *this) {
-  hsv_color_t *hsv = this->hsv_img;
-  int img_size = this->img_size;
-  const int darkness_limit = this->active_parm.darkness_limit;
+static void calc_uniform_average_brightness(atmo_driver_t *self) {
+  hsv_color_t *hsv = self->hsv_img;
+  int img_size = self->img_size;
+  const int darkness_limit = self->active_parm.darkness_limit;
   uint64_t avg = 0;
   int cnt = 0;
-  uint64_t * const avg_bright = this->avg_bright;
-  int c = this->sum_channels;
+  uint64_t * const avg_bright = self->avg_bright;
+  int c = self->sum_channels;
 
   while (img_size--) {
     const int v = hsv->v;
@@ -458,7 +455,7 @@ static void calc_uniform_average_brightness(atmo_driver_t *this) {
   else
     avg = darkness_limit;
 
-  avg = (avg * this->active_parm.brightness) / 100;
+  avg = (avg * self->active_parm.brightness) / 100;
   if (avg > v_MAX)
     avg = v_MAX;
 
@@ -521,26 +518,68 @@ static void hsv_to_rgb(rgb_color_t *rgb, double h, double s, double v) {
 }
 
 
-static void calc_rgb_values(atmo_driver_t *this) {
-  const int n = this->sum_channels;
+static void calc_rgb_values(atmo_driver_t *self) {
+  const int n = self->sum_channels;
   int c;
 
   for (c = 0; c < n; ++c)
-    hsv_to_rgb(&this->analyzed_colors[c], (double)this->most_used_hue[c], (double)this->most_used_sat[c], (double)this->avg_bright[c]);
+    hsv_to_rgb(&self->analyzed_colors[c], (double)self->most_used_hue[c], (double)self->most_used_sat[c], (double)self->avg_bright[c]);
 }
 
 
-static void reset_filters (atmo_driver_t *this) {
-  this->old_mean_length = 0;
-  this->filter_delay = -1;
+static int configure_analyze_size(atmo_driver_t *self, int width, int height) {
+  int size = width * height;
+  int edge_weighting = self->active_parm.edge_weighting;
+
+    /* allocate hsv and weight images */
+  if (size > self->alloc_img_size) {
+    free(self->hsv_img);
+    free(self->weight);
+    self->alloc_img_size = 0;
+    self->hsv_img = (hsv_color_t *) malloc(size * sizeof(hsv_color_t));
+    self->weight = (uint8_t *) malloc(size * self->sum_channels * sizeof(uint8_t));
+    if (self->hsv_img == NULL || self->weight == NULL) {
+      DFATMO_LOG(DFLOG_ERROR, "allocating image memory failed!");
+      return 1;
+    }
+    self->alloc_img_size = size;
+    self->analyze_width = 0;
+    self->analyze_height = 0;
+    self->edge_weighting = 0;
+  }
+  self->img_size = size;
+
+    /* calculate weight image */
+  if (width != self->analyze_width || height != self->analyze_height || edge_weighting != self->edge_weighting) {
+    self->edge_weighting = edge_weighting;
+    self->analyze_width = width;
+    self->analyze_height = height;
+    calc_weight(self);
+    DFATMO_LOG(DFLOG_INFO, "analyze size %dx%d", width, height);
+  }
+
+  return 0;
 }
 
 
-static void percent_filter(atmo_driver_t *this, rgb_color_t *act) {
-  rgb_color_t *out = this->filtered_colors;
-  const int old_p = this->active_parm.filter_smoothness;
+static void free_analyze_images (atmo_driver_t *self) {
+  free(self->hsv_img);
+  free(self->weight);
+  free(self->delay_filter_queue);
+}
+
+
+static void reset_filters (atmo_driver_t *self) {
+  self->old_mean_length = 0;
+  self->filter_delay = -1;
+}
+
+
+static void percent_filter(atmo_driver_t *self, rgb_color_t *act) {
+  rgb_color_t *out = self->filtered_colors;
+  const int old_p = self->active_parm.filter_smoothness;
   const int new_p = 100 - old_p;
-  int n = this->sum_channels;
+  int n = self->sum_channels;
 
   while (n--) {
     out->r = (act->r * new_p + out->r * old_p) / 100;
@@ -552,19 +591,19 @@ static void percent_filter(atmo_driver_t *this, rgb_color_t *act) {
 }
 
 
-static void mean_filter(atmo_driver_t *this, rgb_color_t *act) {
-  rgb_color_t *out = this->filtered_colors;
-  rgb_color_t *mean_values = this->mean_filter_values;
-  rgb_color_sum_t *mean_sums = this->mean_filter_sum_values;
-  const int64_t mean_threshold = (int64_t) ((double) this->active_parm.filter_threshold * 3.6);
-  const int old_p = this->active_parm.filter_smoothness;
+static void mean_filter(atmo_driver_t *self, rgb_color_t *act) {
+  rgb_color_t *out = self->filtered_colors;
+  rgb_color_t *mean_values = self->mean_filter_values;
+  rgb_color_sum_t *mean_sums = self->mean_filter_sum_values;
+  const int64_t mean_threshold = (int64_t) ((double) self->active_parm.filter_threshold * 3.6);
+  const int old_p = self->active_parm.filter_smoothness;
   const int new_p = 100 - old_p;
-  int n = this->sum_channels;
-  const int filter_length = this->active_parm.filter_length;
-  const int64_t mean_length = (filter_length < this->active_parm.output_rate) ? 1: filter_length / this->active_parm.output_rate;
-  const int reinitialize = ((int)mean_length != this->old_mean_length);
+  int n = self->sum_channels;
+  const int filter_length = self->active_parm.filter_length;
+  const int64_t mean_length = (filter_length < self->active_parm.output_rate) ? 1: filter_length / self->active_parm.output_rate;
+  const int reinitialize = ((int)mean_length != self->old_mean_length);
   int64_t dist;
-  this->old_mean_length = (int)mean_length;
+  self->old_mean_length = (int)mean_length;
 
   while (n--) {
     mean_sums->r += (act->r - mean_values->r);
@@ -611,18 +650,34 @@ static void mean_filter(atmo_driver_t *this, rgb_color_t *act) {
 }
 
 
-static void apply_white_calibration(atmo_driver_t *this) {
-  const int wc_red = this->active_parm.wc_red;
-  const int wc_green = this->active_parm.wc_green;
-  const int wc_blue = this->active_parm.wc_blue;
+static void apply_filters(atmo_driver_t *self) {
+    /* Transfer analyzed colors into filtered colors */
+  switch (self->active_parm.filter) {
+  case FILTER_PERCENTAGE:
+    percent_filter(self, self->analyzed_colors);
+    break;
+  case FILTER_COMBINED:
+    mean_filter(self, self->analyzed_colors);
+    break;
+  default:
+      /* no filtering */
+    memcpy(self->filtered_colors, self->analyzed_colors, (self)->sum_channels * sizeof(rgb_color_t));
+  }
+}
+
+
+static void apply_white_calibration(atmo_driver_t *self) {
+  const int wc_red = self->active_parm.wc_red;
+  const int wc_green = self->active_parm.wc_green;
+  const int wc_blue = self->active_parm.wc_blue;
   rgb_color_t *out;
   int n;
 
   if (wc_red == 255 && wc_green == 255 && wc_blue == 255)
     return;
 
-  out = this->filtered_output_colors;
-  n = this->sum_channels;
+  out = self->filtered_output_colors;
+  n = self->sum_channels;
   while (n--) {
     out->r = (uint8_t)((int)out->r * wc_red / 255);
     out->g = (uint8_t)((int)out->g * wc_green / 255);
@@ -632,16 +687,16 @@ static void apply_white_calibration(atmo_driver_t *this) {
 }
 
 
-static void apply_gamma_correction(atmo_driver_t *this) {
-  const int igamma = this->active_parm.gamma;
+static void apply_gamma_correction(atmo_driver_t *self) {
+  const int igamma = self->active_parm.gamma;
 
   if (igamma <= 10)
     return;
 
   {
     const double gamma = (double)igamma / 10.0;
-    rgb_color_t *out = this->filtered_output_colors;
-    int n = this->sum_channels;
+    rgb_color_t *out = self->filtered_output_colors;
+    int n = self->sum_channels;
     while (n--) {
       out->r = (uint8_t)(pow((double)out->r / 255.0, gamma) * 255.0);
       out->g = (uint8_t)(pow((double)out->g / 255.0, gamma) * 255.0);
@@ -652,118 +707,189 @@ static void apply_gamma_correction(atmo_driver_t *this) {
 }
 
 
-static int config_channels(atmo_driver_t *this) {
-  int n = this->parm.top + this->parm.bottom + this->parm.left + this->parm.right +
-          this->parm.center +
-          this->parm.top_left + this->parm.top_right + this->parm.bottom_left + this->parm.bottom_right;
-  this->sum_channels = n;
+static int apply_delay_filter (atmo_driver_t *self) {
+  int filter_delay = self->active_parm.filter_delay;
+  int output_rate = self->active_parm.output_rate;
+  int colors_size = self->sum_channels * sizeof(rgb_color_t);
+  int outp;
 
-  if (n)
+    /* Initialize delay filter queue */
+  if (self->filter_delay != filter_delay || self->output_rate != output_rate) {
+    free(self->delay_filter_queue);
+    self->filter_delay = -1;
+    self->delay_filter_queue_length = ((filter_delay >= output_rate) ? filter_delay / output_rate + 1: 0) * self->sum_channels;
+    if (self->delay_filter_queue_length) {
+      self->delay_filter_queue = (rgb_color_t *) calloc(self->delay_filter_queue_length, sizeof(rgb_color_t));
+      if (self->delay_filter_queue == NULL) {
+        DFATMO_LOG(DFLOG_ERROR, "allocating delay filter queue failed!");
+        return 1;
+      }
+    }
+    else
+      self->delay_filter_queue = NULL;
+
+    self->filter_delay = filter_delay;
+    self->output_rate = output_rate;
+    self->delay_filter_queue_pos = 0;
+  }
+
+    /* Transfer filtered colors to output colors */
+  if (self->delay_filter_queue) {
+    outp = self->delay_filter_queue_pos + self->sum_channels;
+    if (outp >= self->delay_filter_queue_length)
+      outp = 0;
+
+    memcpy(&self->delay_filter_queue[self->delay_filter_queue_pos], self->filtered_colors, colors_size);
+    memcpy(self->filtered_output_colors, &self->delay_filter_queue[outp], colors_size);
+
+    self->delay_filter_queue_pos = outp;
+  } else
+    memcpy(self->filtered_output_colors, self->filtered_colors, colors_size);
+
+  return 0;
+}
+
+
+static int send_output_colors (atmo_driver_t *self, rgb_color_t *output_colors, int initial) {
+  int colors_size = self->sum_channels * sizeof(rgb_color_t);
+  int rc = 0;
+
+  if (initial || memcmp(output_colors, self->last_output_colors, colors_size)) {
+    rc = self->output_driver->output_colors(self->output_driver, output_colors, initial ? NULL: self->last_output_colors);
+    if (rc)
+      DFATMO_LOG(DFLOG_ERROR, "output driver error: %s", self->output_driver->errmsg);
+    else
+      memcpy(self->last_output_colors, output_colors, colors_size);
+  }
+
+  return rc;
+}
+
+
+static int turn_lights_off (atmo_driver_t *self) {
+  memset(self->output_colors, 0, (self->sum_channels * sizeof(rgb_color_t)));
+  return send_output_colors(self, self->output_colors, 0);
+}
+
+
+static int config_channels(atmo_driver_t *self) {
+  int n = self->parm.top + self->parm.bottom + self->parm.left + self->parm.right +
+          self->parm.center +
+          self->parm.top_left + self->parm.top_right + self->parm.bottom_left + self->parm.bottom_right;
+  self->sum_channels = n;
+
+  if (n < 1) {
+    DFATMO_LOG(DFLOG_ERROR, "no channels configured!");
+    return 1;
+  }
+
+  self->hue_hist = (uint64_t *) calloc(n * (h_MAX + 1), sizeof(uint64_t));
+  self->w_hue_hist = (uint64_t *) calloc(n * (h_MAX + 1), sizeof(uint64_t));
+  self->most_used_hue = (int *) calloc(n, sizeof(int));
+  self->last_most_used_hue = (int *) calloc(n, sizeof(int));
+
+  self->sat_hist = (uint64_t *) calloc(n * (s_MAX + 1), sizeof(uint64_t));
+  self->w_sat_hist = (uint64_t *) calloc(n * (s_MAX + 1), sizeof(uint64_t));
+  self->most_used_sat = (int *) calloc(n, sizeof(int));
+
+  self->avg_cnt = (int *) calloc(n, sizeof(int));
+  self->avg_bright = (uint64_t *) calloc(n, sizeof(uint64_t));
+
+  self->analyzed_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
+  self->filtered_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
+  self->filtered_output_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
+  self->output_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
+  self->last_output_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
+  self->mean_filter_values = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
+  self->mean_filter_sum_values = (rgb_color_sum_t *) calloc(n, sizeof(rgb_color_sum_t));
+
+  if (!(self->hue_hist &&
+      self->w_hue_hist &&
+      self->most_used_hue &&
+      self->last_most_used_hue &&
+      self->sat_hist &&
+      self->w_sat_hist &&
+      self->most_used_sat &&
+      self->avg_cnt &&
+      self->avg_bright &&
+      self->analyzed_colors &&
+      self->filtered_colors &&
+      self->filtered_output_colors &&
+      self->output_colors &&
+      self->last_output_colors &&
+      self->mean_filter_values &&
+      self->mean_filter_sum_values)) {
+    DFATMO_LOG(DFLOG_ERROR, "channel configuration fails!");
+    return 1;
+  }
+
+  return 0;
+}
+
+
+static void free_channels(atmo_driver_t *self) {
+  if (self->sum_channels)
   {
-    this->hue_hist = (uint64_t *) calloc(n * (h_MAX + 1), sizeof(uint64_t));
-    this->w_hue_hist = (uint64_t *) calloc(n * (h_MAX + 1), sizeof(uint64_t));
-    this->most_used_hue = (int *) calloc(n, sizeof(int));
-    this->last_most_used_hue = (int *) calloc(n, sizeof(int));
+    FREE_AND_SET_NULL(self->hue_hist);
+    FREE_AND_SET_NULL(self->w_hue_hist);
+    FREE_AND_SET_NULL(self->most_used_hue);
+    FREE_AND_SET_NULL(self->last_most_used_hue);
 
-    this->sat_hist = (uint64_t *) calloc(n * (s_MAX + 1), sizeof(uint64_t));
-    this->w_sat_hist = (uint64_t *) calloc(n * (s_MAX + 1), sizeof(uint64_t));
-    this->most_used_sat = (int *) calloc(n, sizeof(int));
+    FREE_AND_SET_NULL(self->sat_hist);
+    FREE_AND_SET_NULL(self->w_sat_hist);
+    FREE_AND_SET_NULL(self->most_used_sat);
 
-    this->avg_cnt = (int *) calloc(n, sizeof(int));
-    this->avg_bright = (uint64_t *) calloc(n, sizeof(uint64_t));
+    FREE_AND_SET_NULL(self->avg_cnt);
+    FREE_AND_SET_NULL(self->avg_bright);
 
-    this->analyzed_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
-    this->filtered_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
-    this->filtered_output_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
-    this->output_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
-    this->last_output_colors = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
-    this->mean_filter_values = (rgb_color_t *) calloc(n, sizeof(rgb_color_t));
-    this->mean_filter_sum_values = (rgb_color_sum_t *) calloc(n, sizeof(rgb_color_sum_t));
+    FREE_AND_SET_NULL(self->analyzed_colors);
+    FREE_AND_SET_NULL(self->filtered_colors);
+    FREE_AND_SET_NULL(self->filtered_output_colors);
+    FREE_AND_SET_NULL(self->output_colors);
+    FREE_AND_SET_NULL(self->last_output_colors);
+    FREE_AND_SET_NULL(self->mean_filter_values);
+    FREE_AND_SET_NULL(self->mean_filter_sum_values);
 
-    if (!(this->hue_hist &&
-        this->w_hue_hist &&
-        this->most_used_hue &&
-        this->last_most_used_hue &&
-        this->sat_hist &&
-        this->w_sat_hist &&
-        this->most_used_sat &&
-        this->avg_cnt &&
-        this->avg_bright &&
-        this->analyzed_colors &&
-        this->filtered_colors &&
-        this->filtered_output_colors &&
-        this->output_colors &&
-        this->last_output_colors &&
-        this->mean_filter_values &&
-        this->mean_filter_sum_values))
-      return 1;
-  }
-  return 0;
-}
-
-
-static void free_channels(atmo_driver_t *this) {
-  if (this->sum_channels)
-  {
-    FREE_AND_SET_NULL(this->hue_hist);
-    FREE_AND_SET_NULL(this->w_hue_hist);
-    FREE_AND_SET_NULL(this->most_used_hue);
-    FREE_AND_SET_NULL(this->last_most_used_hue);
-
-    FREE_AND_SET_NULL(this->sat_hist);
-    FREE_AND_SET_NULL(this->w_sat_hist);
-    FREE_AND_SET_NULL(this->most_used_sat);
-
-    FREE_AND_SET_NULL(this->avg_cnt);
-    FREE_AND_SET_NULL(this->avg_bright);
-
-    FREE_AND_SET_NULL(this->analyzed_colors);
-    FREE_AND_SET_NULL(this->filtered_colors);
-    FREE_AND_SET_NULL(this->filtered_output_colors);
-    FREE_AND_SET_NULL(this->output_colors);
-    FREE_AND_SET_NULL(this->last_output_colors);
-    FREE_AND_SET_NULL(this->mean_filter_values);
-    FREE_AND_SET_NULL(this->mean_filter_sum_values);
-
-    this->sum_channels = 0;
+    self->sum_channels = 0;
   }
 }
 
 
-static int null_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
+static int null_driver_open(output_driver_t *self_gen, atmo_parameters_t *p) {
   return 0;
 }
 
-static int null_driver_configure(output_driver_t *this_gen, atmo_parameters_t *p) {
+static int null_driver_configure(output_driver_t *self_gen, atmo_parameters_t *p) {
   return 0;
 }
 
-static int null_driver_close(output_driver_t *this_gen) {
+static int null_driver_close(output_driver_t *self_gen) {
   return 0;
 }
 
-static void null_driver_dispose(output_driver_t *this_gen) {
-  free(this_gen);
+static void null_driver_dispose(output_driver_t *self_gen) {
+  free(self_gen);
 }
 
-static int null_driver_output_colors(output_driver_t *this_gen, rgb_color_t *colors, rgb_color_t *last_colors) {
+static int null_driver_output_colors(output_driver_t *self_gen, rgb_color_t *colors, rgb_color_t *last_colors) {
   return 0;
 }
 
 
-static void unload_output_driver(atmo_driver_t *this) {
-  if (this->output_driver) {
-    this->output_driver->dispose(this->output_driver);
-    this->output_driver = NULL;
+static void unload_output_driver(atmo_driver_t *self) {
+  if (self->output_driver) {
+    self->output_driver->dispose(self->output_driver);
+    self->output_driver = NULL;
   }
-  if (this->output_driver_lib) {
-    FREE_LIBRARY(this->output_driver_lib);
-    this->output_driver_lib = NULL;
+  if (self->output_driver_lib) {
+    FREE_LIBRARY(self->output_driver_lib);
+    self->output_driver_lib = NULL;
+    DFATMO_LOG(DFLOG_INFO, "output driver unloaded");
   }
 }
 
 
-static int load_output_driver(atmo_driver_t *this) {
+static int load_output_driver(atmo_driver_t *self) {
   char filename[256];
   int found;
   char *p;
@@ -772,48 +898,49 @@ static int load_output_driver(atmo_driver_t *this) {
   lib_error_t err;
   output_driver_t *ot;
 
-  if (!strlen(this->parm.driver))
-    strcpy(this->parm.driver, "null");
+  if (!strlen(self->parm.driver))
+    strcpy(self->parm.driver, "null");
 
-  if (!strcmp(this->parm.driver, "null")) {
-    this->output_driver = (output_driver_t *) calloc(1, sizeof(output_driver_t));
-    if (!this->output_driver) {
-      DFATMO_LOG(LOG_ERROR, "creating null output driver instance failed");
+  if (!strcmp(self->parm.driver, "null")) {
+    self->output_driver = (output_driver_t *) calloc(1, sizeof(output_driver_t));
+    if (!self->output_driver) {
+      DFATMO_LOG(DFLOG_ERROR, "creating null output driver instance failed");
       return 1;
     }
-    this->output_driver->version = DFATMO_OUTPUT_DRIVER_VERSION;
-    this->output_driver->open = null_driver_open;
-    this->output_driver->configure = null_driver_configure;
-    this->output_driver->close = null_driver_close;
-    this->output_driver->dispose = null_driver_dispose;
-    this->output_driver->output_colors = null_driver_output_colors;
+    self->output_driver->version = DFATMO_OUTPUT_DRIVER_VERSION;
+    self->output_driver->open = null_driver_open;
+    self->output_driver->configure = null_driver_configure;
+    self->output_driver->close = null_driver_close;
+    self->output_driver->dispose = null_driver_dispose;
+    self->output_driver->output_colors = null_driver_output_colors;
+    DFATMO_LOG(DFLOG_INFO, "output driver %s loaded", self->parm.driver);
     return 0;
   }
 
-  if (strlen(this->parm.driver_path) == 0) {
-    DFATMO_LOG(LOG_ERROR, "output driver search path missing");
+  if (strlen(self->parm.driver_path) == 0) {
+    DFATMO_LOG(DFLOG_ERROR, "output driver search path missing");
     return 1;
   }
 
   found = 0;
-  p = this->parm.driver_path;
+  p = self->parm.driver_path;
   while (p != NULL) {
     char *e = strchr(p, LIB_SEARCH_PATH_SEP);
     if (e == NULL) {
-      snprintf(filename, sizeof(filename), LIB_NAME_TEMPLATE, (int)strlen(p), p, this->parm.driver);
+      snprintf(filename, sizeof(filename), LIB_NAME_TEMPLATE, (int)strlen(p), p, self->parm.driver);
       p = e;
     } else {
-      snprintf(filename, sizeof(filename), LIB_NAME_TEMPLATE, (int)(e - p), p, this->parm.driver);
+      snprintf(filename, sizeof(filename), LIB_NAME_TEMPLATE, (int)(e - p), p, self->parm.driver);
       p = e + 1;
     }
-    DFATMO_LOG(LOG_DEBUG, "search output driver '%s'", filename);
+    DFATMO_LOG(DFLOG_DEBUG, "search output driver '%s'", filename);
     if (FILE_LOADABLE(filename)) {
       found = 1;
       break;
     }
   }
   if (!found) {
-    DFATMO_LOG(LOG_ERROR, "output driver 'dfatmo-%s' not found", this->parm.driver);
+    DFATMO_LOG(DFLOG_ERROR, "output driver 'dfatmo-%s' not found", self->parm.driver);
     return 1;
   }
 
@@ -826,7 +953,7 @@ static int load_output_driver(atmo_driver_t *this) {
   if (new_output_driver == NULL || IS_LIB_ERROR(err)) {
     char buf[128];
     GET_LIB_ERR_MSG(err, buf);
-    DFATMO_LOG(LOG_ERROR, "loading output driver failed: %s", buf);
+    DFATMO_LOG(DFLOG_ERROR, "loading output driver failed: %s", buf);
     if (lib != NULL)
       FREE_LIBRARY(lib);
     return 1;
@@ -834,98 +961,162 @@ static int load_output_driver(atmo_driver_t *this) {
 
   ot = (*new_output_driver)(dfatmo_log_level, dfatmo_log);
   if (ot == NULL) {
-    DFATMO_LOG(LOG_ERROR, "creating output driver instance of '%s' failed", filename);
+    DFATMO_LOG(DFLOG_ERROR, "creating output driver instance of '%s' failed", filename);
     FREE_LIBRARY(lib);
     return 1;
   }
 
   if (ot->version != DFATMO_OUTPUT_DRIVER_VERSION) {
-    DFATMO_LOG(LOG_ERROR, "wrong version %d of output driver '%s'. Expected version %d", ot->version, filename, DFATMO_OUTPUT_DRIVER_VERSION);
+    DFATMO_LOG(DFLOG_ERROR, "wrong version %d of output driver '%s'. Expected version %d", ot->version, filename, DFATMO_OUTPUT_DRIVER_VERSION);
     ot->dispose(ot);
     FREE_LIBRARY(lib);
     return 1;
   }
 
-  this->output_driver = ot;
-  this->output_driver_lib = lib;
+  self->output_driver = ot;
+  self->output_driver_lib = lib;
+
+  DFATMO_LOG(DFLOG_INFO, "output driver %s loaded", self->parm.driver);
 
   return 0;
 }
 
 
-static int turn_lights_off (atmo_driver_t *this) {
+static int open_output_driver (atmo_driver_t *self) {
   int rc = 0;
-  int colors_size = this->sum_channels * sizeof(rgb_color_t);
-  memset(this->output_colors, 0, colors_size);
-  if (memcmp(this->output_colors, this->last_output_colors, colors_size)) {
-    rc = this->output_driver->output_colors(this->output_driver, this->output_colors, this->last_output_colors);
-    memset(this->last_output_colors, 0, colors_size);
+
+  if (!self->driver_opened) {
+    if (self->output_driver == NULL)
+      rc = load_output_driver(self);
+
+    if (!rc) {
+      rc = self->output_driver->open(self->output_driver, &self->parm);
+      if (rc)
+        DFATMO_LOG(DFLOG_ERROR, "output driver error: %s", self->output_driver->errmsg);
+      else {
+        self->driver_opened = 1;
+        DFATMO_LOG(DFLOG_INFO, "output driver opened");
+      }
+    }
+  } else {
+    rc = self->output_driver->configure(self->output_driver, &self->parm);
+    if (rc)
+      DFATMO_LOG(DFLOG_ERROR, "output driver error: %s", self->output_driver->errmsg);
+    else
+      DFATMO_LOG(DFLOG_INFO, "output driver reconfigured");
   }
   return rc;
 }
 
 
-static int close_output_driver (atmo_driver_t *this) {
+static int close_output_driver (atmo_driver_t *self) {
   int rc = 0;
 
-  if (this->driver_opened) {
-    turn_lights_off(this);
-    this->driver_opened = 0;
-    rc = this->output_driver->close(this->output_driver);
+  if (self->driver_opened) {
+    turn_lights_off(self);
+    self->driver_opened = 0;
+    rc = self->output_driver->close(self->output_driver);
+    if (rc)
+      DFATMO_LOG(DFLOG_ERROR, "output driver error: %s", self->output_driver->errmsg);
+    else
+      DFATMO_LOG(DFLOG_INFO, "output driver closed");
   }
   return rc;
 }
 
 
-static void instant_configure (atmo_driver_t *this) {
-  this->active_parm.overscan = this->parm.overscan;
-  this->active_parm.darkness_limit = this->parm.darkness_limit;
-  this->active_parm.edge_weighting = this->parm.edge_weighting;
-  this->active_parm.hue_win_size = this->parm.hue_win_size;
-  this->active_parm.sat_win_size = this->parm.sat_win_size;
-  this->active_parm.hue_threshold = this->parm.hue_threshold;
-  this->active_parm.uniform_brightness = this->parm.uniform_brightness;
-  this->active_parm.brightness = this->parm.brightness;
-  this->active_parm.filter = this->parm.filter;
-  this->active_parm.filter_smoothness = this->parm.filter_smoothness;
-  this->active_parm.filter_length = this->parm.filter_length;
-  this->active_parm.filter_threshold = this->parm.filter_threshold;
-  this->active_parm.filter_delay = this->parm.filter_delay;
-  this->active_parm.wc_red = this->parm.wc_red;
-  this->active_parm.wc_green = this->parm.wc_green;
-  this->active_parm.wc_blue = this->parm.wc_blue;
-  this->active_parm.gamma = this->parm.gamma;
-  this->active_parm.output_rate = this->parm.output_rate;
-  this->active_parm.analyze_size = this->parm.analyze_size;
+static void instant_configure (atmo_driver_t *self) {
+  self->active_parm.overscan = self->parm.overscan;
+  self->active_parm.darkness_limit = self->parm.darkness_limit;
+  self->active_parm.edge_weighting = self->parm.edge_weighting;
+  self->active_parm.hue_win_size = self->parm.hue_win_size;
+  self->active_parm.sat_win_size = self->parm.sat_win_size;
+  self->active_parm.hue_threshold = self->parm.hue_threshold;
+  self->active_parm.uniform_brightness = self->parm.uniform_brightness;
+  self->active_parm.brightness = self->parm.brightness;
+  self->active_parm.filter = self->parm.filter;
+  self->active_parm.filter_smoothness = self->parm.filter_smoothness;
+  self->active_parm.filter_length = self->parm.filter_length;
+  self->active_parm.filter_threshold = self->parm.filter_threshold;
+  self->active_parm.filter_delay = self->parm.filter_delay;
+  self->active_parm.wc_red = self->parm.wc_red;
+  self->active_parm.wc_green = self->parm.wc_green;
+  self->active_parm.wc_blue = self->parm.wc_blue;
+  self->active_parm.gamma = self->parm.gamma;
+  self->active_parm.output_rate = self->parm.output_rate;
+  self->active_parm.analyze_size = self->parm.analyze_size;
 }
 
 
-static void init_configuration (atmo_driver_t *this)
+static void init_configuration (atmo_driver_t *self)
 {
-  memset(this, 0, sizeof(atmo_driver_t));
+  memset(self, 0, sizeof(atmo_driver_t));
 
     /* Set default values for parameters */
-  strcpy(this->parm.driver, "null");
+  strcpy(self->parm.driver, "null");
 #ifdef OUTPUT_DRIVER_PATH
-  strcpy(this->parm.driver_path, OUTPUT_DRIVER_PATH);
+  strcpy(self->parm.driver_path, OUTPUT_DRIVER_PATH);
 #endif
-  this->parm.brightness = 100;
-  this->parm.darkness_limit = 1;
-  this->parm.edge_weighting = 60;
-  this->parm.filter = FILTER_COMBINED;
-  this->parm.filter_length = 500;
-  this->parm.filter_smoothness = 50;
-  this->parm.filter_threshold = 40;
-  this->parm.hue_win_size = 3;
-  this->parm.sat_win_size = 3;
-  this->parm.hue_threshold = 93;
-  this->parm.wc_red = 255;
-  this->parm.wc_green = 255;
-  this->parm.wc_blue = 255;
-  this->parm.output_rate = 20;
-  this->parm.gamma = 10;
-  this->parm.analyze_rate = 35;
-  this->parm.analyze_size = 1;
-  this->parm.start_delay = 250;
-  this->parm.enabled = 1;
+  self->parm.brightness = 100;
+  self->parm.darkness_limit = 1;
+  self->parm.edge_weighting = 60;
+  self->parm.filter = FILTER_COMBINED;
+  self->parm.filter_length = 500;
+  self->parm.filter_smoothness = 50;
+  self->parm.filter_threshold = 40;
+  self->parm.hue_win_size = 3;
+  self->parm.sat_win_size = 3;
+  self->parm.hue_threshold = 93;
+  self->parm.wc_red = 255;
+  self->parm.wc_green = 255;
+  self->parm.wc_blue = 255;
+  self->parm.output_rate = 20;
+  self->parm.gamma = 10;
+  self->parm.analyze_rate = 35;
+  self->parm.analyze_size = 1;
+  self->parm.start_delay = 250;
+  self->parm.enabled = 1;
 }
+
+#ifndef trNOOP
+#define trNOOP(x) x
+#endif
+
+static char const *filter_enum[NUM_FILTERS] = { trNOOP("off"), trNOOP("percentage"), trNOOP("combined") };
+static char const *analyze_size_enum[4] = { "64", "128", "192", "256" };
+
+#define PARM_DESC_LIST \
+PARM_DESC_BOOL(enabled, NULL, 0, 1, 0, trNOOP("Launch on startup")) \
+PARM_DESC_CHAR(driver, NULL, 0, 0, 0, trNOOP("Output driver name")) \
+PARM_DESC_CHAR(driver_param, NULL, 0, 0, 0, trNOOP("Driver parameters")) \
+PARM_DESC_CHAR(driver_path, NULL, 0, 0, 0, trNOOP("Output driver search path")) \
+PARM_DESC_INT(top, NULL, 0, MAX_BORDER_CHANNELS, 0, trNOOP("Sections at top area")) \
+PARM_DESC_INT(bottom, NULL, 0, MAX_BORDER_CHANNELS, 0, trNOOP("Sections at bottom area")) \
+PARM_DESC_INT(left, NULL, 0, MAX_BORDER_CHANNELS, 0, trNOOP("Sections at left area")) \
+PARM_DESC_INT(right, NULL, 0, MAX_BORDER_CHANNELS, 0, trNOOP("Sections at right area")) \
+PARM_DESC_BOOL(center, NULL, 0, 1, 0, trNOOP("Activate center area")) \
+PARM_DESC_BOOL(top_left, NULL, 0, 1, 0, trNOOP("Activate top left area")) \
+PARM_DESC_BOOL(top_right, NULL, 0, 1, 0, trNOOP("Activate top right area")) \
+PARM_DESC_BOOL(bottom_left, NULL, 0, 1, 0, trNOOP("Activate bottom left area")) \
+PARM_DESC_BOOL(bottom_right, NULL, 0, 1, 0, trNOOP("Activate bottom right area")) \
+PARM_DESC_INT(analyze_rate, NULL, 10, 500, 0, trNOOP("Analyze rate [ms]")) \
+PARM_DESC_INT(analyze_size, analyze_size_enum, 0, 3, 0, trNOOP("Size of analyze image")) \
+PARM_DESC_INT(overscan, NULL, 0, 200, 0, trNOOP("Ignored overscan border [%1000]")) \
+PARM_DESC_INT(darkness_limit, NULL, 0, 100, 0, trNOOP("Limit for black pixel")) \
+PARM_DESC_INT(edge_weighting, NULL, 10, 200, 0, trNOOP("Power of edge weighting")) \
+PARM_DESC_INT(hue_win_size, NULL, 0, 5, 0, trNOOP("Hue windowing size")) \
+PARM_DESC_INT(sat_win_size, NULL, 0, 5, 0, trNOOP("Saturation windowing size")) \
+PARM_DESC_INT(hue_threshold, NULL, 0, 100, 0, trNOOP("Hue threshold [%]")) \
+PARM_DESC_INT(brightness, NULL, 50, 300, 0, trNOOP("Brightness [%]")) \
+PARM_DESC_BOOL(uniform_brightness, NULL, 0, 1, 0, trNOOP("Uniform brightness mode")) \
+PARM_DESC_INT(filter, filter_enum, 0, (NUM_FILTERS-1), 0, trNOOP("Filter mode")) \
+PARM_DESC_INT(filter_smoothness, NULL, 1, 100, 0, trNOOP("Filter smoothness [%]")) \
+PARM_DESC_INT(filter_length, NULL, 300, 5000, 0, trNOOP("Filter length [ms]")) \
+PARM_DESC_INT(filter_threshold, NULL, 1, 100, 0, trNOOP("Filter threshold [%]")) \
+PARM_DESC_INT(filter_delay, NULL, 0, 1000, 0, trNOOP("Output delay [ms]")) \
+PARM_DESC_INT(output_rate, NULL, 10, 500, 0, trNOOP("Output rate [ms]")) \
+PARM_DESC_INT(start_delay, NULL, 0, 5000, 0, trNOOP("Delay after stream start [ms]")) \
+PARM_DESC_INT(wc_red, NULL, 0, 255, 0, trNOOP("Red white calibration")) \
+PARM_DESC_INT(wc_green, NULL, 0, 255, 0, trNOOP("Green white calibration")) \
+PARM_DESC_INT(wc_blue, NULL, 0, 255, 0, trNOOP("Blue white calibration")) \
+PARM_DESC_INT(gamma, NULL, 0, 30, 0, trNOOP("Gamma correction"))

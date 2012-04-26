@@ -1,5 +1,5 @@
 This is the README file of DFAtmo the driver for Atmolight controllers for
-XBMC and xinelib based video players.
+VDR, XBMC and xinelib based video players.
 
 Written by: Andreas Auras (yak54@inkennet.de)
 
@@ -22,7 +22,7 @@ To drive these LED's a dedicated hardware is necessary that is called the
 there exists several projects to build these hardware by yourself. 
 
 DFAtmo continuously analyzes the video picture and generates output data
-for these Atmolight controllers. DFAtmo supports XBMC and xinelib based
+for these Atmolight controllers. DFAtmo supports VDR, XBMC and xinelib based
 media players where it is installed as a plugin or addon. XBMC is supported
 on Linux and Windows platforms.
 
@@ -60,27 +60,15 @@ DFAtmo contains the following components:
 2) Native Python "atmodriver" module
 3) DFAtmo XBMC addon
 4) DFAtmo xinelib plugin
+5) DFAtmo VDR plugin
 
 These components have dependencies among each other. The XBMC addon
-needs 2) which in turn needs 1). The xinelib plugin needs 1).
-The output drivers are shared by 3) and 4)
+needs 2) which in turn needs 1). The VDR and xinelib plugin needs 1).
+The output drivers are shared by 3) 4) and 5)
 
 
 Building the components:
 ------------------------
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-IMPORTANT NOTE: Currently DFAtmo has special requirements on its
-dependencies! DFAtmo will not work with the current "officially" released
-XBMC nor will it work with xinelib base media players that
-are compiled against the currently "officially" released xinelib.
-
-The DFAtmo XBMC addon currently requires a very recent XBMC version from git.
-A version after Sep 30 2011 which included commit
-54e4ca5c481e20cdc2f96d866f3346bfd1482ce9 is sufficient.
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
 The build process step by step:
 There exists a common build target for the "atmodriver" module and the
@@ -144,23 +132,27 @@ For building the DFAtmo xinelib plugin you need a recent xine-lib-1.2
 release from here:
   http://hg.debian.org/hg/xine-lib/xine-lib-1.2
 
-Please note that this library version is currently not the "official" one
-and it is not used on ordinary Linux distributions.
-Be aware that the xine-lib based media players you like to use should
-also be compiled against the xine-lib-1.2.
+For ubuntu you can use package "libxine2-dev".
 
 Compiling and installation of the plugin:
   make xineplugin
   make xineinstall
 
 
+For building the DFAtmo VDR plugin you need a recent VDR release >= 1.7
+
+Compiling and installation of the VDR plugin:
+  make -f vdrplug.mk all
+  make -f vdrplug.mk install
+  
+  
 For ubuntu there exists a debian package build you can use to build all components
 in one step with:
   dpkg-buildpackage -b -D -tc -sd -us -uc
   
-This generates the two deb packages "dfatmo" and "libxine-dfatmo-plugin". The
-"dfatmo" package also contains the XBMC addon zip file which will be installed
-to "/usr/lib/dfatmo".
+This generates three deb packages "dfatmo", "libxine-dfatmo-plugin" and
+"vdr-plugin-dfatmo". The "dfatmo" package also contains the XBMC addon zip
+file which will be installed to "/usr/lib/dfatmo".
 To build only the "dfatmo" package there exists a dedicated debian control
 file "debian/control-dfatmo-only". Copy this file to "debian/control" before
 executing the dpkg-buildpackage command.
@@ -220,6 +212,31 @@ command line. Players like xine-ui have GUI support for changing plugin paramete
 (press <alt><shift>p to show the post processing panel).
 
 
+Configuration of the DFAtmo VDR plugin:
+---------------------------------------
+Load the DFAtmo plugin by adding a command line option like this:
+
+-P dfatmo
+
+The log level for the DFAtmo plugin could be controlled by a plugin 
+parameter like this:
+
+-P "dfatmo -l 3"
+
+The plugin could be configured by the user with the usual plugin setup menu.
+With the auto launch option you can control if the Atmolight should be
+switched on or off on startup of VDR.
+
+With the plugin control menu you can temporarily switch on/off or change the
+brightness of the Atmolight. These settings are not stored in setup.
+Alternatively you can control these settings with the following hot keys:
+
+@dfatmo red    -> switch Atmolight off
+@dfatmo green  -> switch Atmolight on
+@dfatmo yellow -> increase brightness by 10
+@dfatmo blue   -> decrease brightness by 10
+
+
 Parameters understood by DFAtmo:
 --------------------------------
 
@@ -273,7 +290,7 @@ bottom_right       0                Number of sections (RGB channel groups) in a
                                     desired layout.
                                     
                                     
-analyze_rate *     35               Rate of frame grabbing and video analysis. Unit milliseconds.
+analyze_rate *     35/40            Rate of frame grabbing and video analysis. Unit milliseconds.
                                     Valid values: 10 ... 500
 
 analyze_size *     1                Size of analyze window. The window width is calculated by (analyze_size+1)*64 pixel.
@@ -310,7 +327,7 @@ hue_win_size *     3                Windowing size for HUE. Valid values 0 ... 5
 
 sat_win_size *     3                Windowing size for saturation. Valid values 0 ... 5
 
-hue_treshold  *     93              Threshold limit for change of color.
+hue_treshold  *    93               Threshold limit for change of color.
                                     Unit percentage of 100. Valid values 1 ... 100
                                      
 brightness  *      100              Controls brightness of generated color values.
@@ -380,9 +397,13 @@ gamma *            0                Gamma correction factor for red, green and b
                                     feature of the DF10CH setup program instead of this parameter because you will not
                                     lose PWM resolution.
 
+output_rate *      20               Rate at which color information is send to the Atmolight controllers. Unit milliseconds.
+                                    Valid values: 10 ... 500
+
 start_delay *      250              Delay after stream start before first output is send [ms].
                                     Currently not suported by XBMC addon.
                                     Valid values 0 ... 5000.
+                                    
 
 enabled *          1                Enable/Disable output of color values to atmolight controller.
                                     Valid values: 0 (disable), 1 (enable)

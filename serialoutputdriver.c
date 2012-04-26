@@ -181,7 +181,7 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
   }
 #endif
 
-  DFATMO_LOG(LOG_INFO, "serial port device: '%s'", devname);
+  DFATMO_LOG(DFLOG_INFO, "serial port device: '%s'", devname);
 
     /* open serial port device */
   devfd = OPEN_DEVICE(devname);
@@ -275,7 +275,7 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
     }
   }
 
-  DFATMO_LOG(LOG_INFO, "serial port speed: %s", speed);
+  DFATMO_LOG(DFLOG_INFO, "serial port speed: %s", speed);
 
 #ifdef WIN32
   {

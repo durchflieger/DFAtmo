@@ -44,73 +44,12 @@
 #define GRAB_TIMEOUT            100     /* max. time waiting for next grab image [ms] */
 #define THREAD_RESPONSE_TIMEOUT 500000  /* timeout for thread state change [us] */
 
-static char *filter_enum[NUM_FILTERS+1] = { "off", "percentage", "combined" };
+#define PARM_DESC_BOOL( var, enumv, min, max, readonly, descr ) PARAM_ITEM( POST_PARAM_TYPE_BOOL, var, enumv, min, max, readonly, descr )
+#define PARM_DESC_INT( var, enumv, min, max, readonly, descr ) PARAM_ITEM( POST_PARAM_TYPE_INT, var, enumv, min, max, readonly, descr )
+#define PARM_DESC_CHAR( var, enumv, min, max, readonly, descr ) PARAM_ITEM( POST_PARAM_TYPE_CHAR, var, enumv, min, max, readonly, descr )
 
 START_PARAM_DESCR(atmo_parameters_t)
-PARAM_ITEM(POST_PARAM_TYPE_BOOL, enabled, NULL, 0, 1, 0,
-  "enable plugin")
-PARAM_ITEM(POST_PARAM_TYPE_CHAR, driver, NULL, 0, 0, 0,
-  "output driver")
-PARAM_ITEM(POST_PARAM_TYPE_CHAR, driver_param, NULL, 0, 0, 0,
-  "parameters for output driver")
-PARAM_ITEM(POST_PARAM_TYPE_INT, top, NULL, 0, 25, 0,
-  "number of areas at top border")
-PARAM_ITEM(POST_PARAM_TYPE_INT, bottom, NULL, 0, 25, 0,
-  "number of areas at bottom border")
-PARAM_ITEM(POST_PARAM_TYPE_INT, left, NULL, 0, 25, 0,
-  "number of areas at left border")
-PARAM_ITEM(POST_PARAM_TYPE_INT, right, NULL, 0, 25, 0,
-  "number of areas at right border")
-PARAM_ITEM(POST_PARAM_TYPE_INT, center, NULL, 0, 1, 0,
-  "activate center area")
-PARAM_ITEM(POST_PARAM_TYPE_INT, top_left, NULL, 0, 1, 0,
-  "activate top_left area")
-PARAM_ITEM(POST_PARAM_TYPE_INT, top_right, NULL, 0, 1, 0,
-  "activate top_right area")
-PARAM_ITEM(POST_PARAM_TYPE_INT, bottom_left, NULL, 0, 1, 0,
-  "activate bottom_left area")
-PARAM_ITEM(POST_PARAM_TYPE_INT, bottom_right, NULL, 0, 1, 0,
-  "activate bottom right area")
-PARAM_ITEM(POST_PARAM_TYPE_INT, analyze_rate, NULL, 10, 500, 0,
-  "analyze rate [ms]")
-PARAM_ITEM(POST_PARAM_TYPE_INT, analyze_size, NULL, 0, 3, 0,
-  "size of analyze image")
-PARAM_ITEM(POST_PARAM_TYPE_INT, overscan, NULL, 0, 200, 0,
-  "ignored overscan border of grabbed image [%1000]")
-PARAM_ITEM(POST_PARAM_TYPE_INT, darkness_limit, NULL, 0, 100, 0,
-  "limit for black pixel")
-PARAM_ITEM(POST_PARAM_TYPE_INT, edge_weighting, NULL, 10, 200, 0,
-  "power of edge weighting")
-PARAM_ITEM(POST_PARAM_TYPE_INT, hue_win_size, NULL, 0, 5, 0,
-  "hue windowing size")
-PARAM_ITEM(POST_PARAM_TYPE_INT, sat_win_size, NULL, 0, 5, 0,
-  "saturation windowing size")
-PARAM_ITEM(POST_PARAM_TYPE_INT, hue_threshold, NULL, 0, 100, 0,
-  "hue threshold [%]")
-PARAM_ITEM(POST_PARAM_TYPE_INT, brightness, NULL, 50, 300, 0,
-  "brightness [%]")
-PARAM_ITEM(POST_PARAM_TYPE_BOOL, uniform_brightness, NULL, 0, 1, 0,
-    "calculate uniform brightness")
-PARAM_ITEM(POST_PARAM_TYPE_INT, filter, filter_enum, 0, NUM_FILTERS, 0,
-  "filter mode")
-PARAM_ITEM(POST_PARAM_TYPE_INT, filter_smoothness, NULL, 1, 100, 0,
-  "filter smoothness [%]")
-PARAM_ITEM(POST_PARAM_TYPE_INT, filter_length, NULL, 300, 5000, 0,
-  "filter length [ms]")
-PARAM_ITEM(POST_PARAM_TYPE_INT, filter_threshold, NULL, 1, 100, 0,
-  "filter threshold [%]")
-PARAM_ITEM(POST_PARAM_TYPE_INT, filter_delay, NULL, 0, 1000, 0,
-  "delay for output send to controller [ms]")
-PARAM_ITEM(POST_PARAM_TYPE_INT, wc_red, NULL, 0, 255, 0,
-  "white calibration correction factor of red color channel")
-PARAM_ITEM(POST_PARAM_TYPE_INT, wc_green, NULL, 0, 255, 0,
-  "white calibration correction factor of green color channel")
-PARAM_ITEM(POST_PARAM_TYPE_INT, wc_blue, NULL, 0, 255, 0,
-  "white calibration correction factor of blue color channel")
-PARAM_ITEM(POST_PARAM_TYPE_INT, gamma, NULL, 0, 30, 0,
-  "gamma correction factor")
-PARAM_ITEM(POST_PARAM_TYPE_INT, start_delay, NULL, 0, 5000, 0,
-  "delay after stream start before first output is send [ms]")
+PARM_DESC_LIST
 END_PARAM_DESCR(atmo_param_descr)
 
 
@@ -141,7 +80,7 @@ typedef struct atmo_post_plugin_s
 } atmo_post_plugin_t;
 
 
-static int act_log_level = LOG_ERROR;
+static int act_log_level = DFLOG_ERROR;
 dfatmo_log_level_t dfatmo_log_level = &act_log_level;
 
 static xine_t *xine_instance;
@@ -318,7 +257,7 @@ static void *atmo_grab_loop (void *this_gen) {
   pthread_cond_broadcast(&this->thread_state_change);
   pthread_mutex_unlock(&this->lock);
 
-  DFATMO_LOG(LOG_INFO, "grab thread running");
+  DFATMO_LOG(DFLOG_INFO, "grab thread running");
 
   ticket->acquire(ticket, 0);
 
@@ -353,7 +292,7 @@ static void *atmo_grab_loop (void *this_gen) {
       }
 
       if (ticket->ticket_revoked) {
-        DFATMO_LOG(LOG_INFO, "grab thread waiting for new ticket");
+        DFATMO_LOG(DFLOG_INFO, "grab thread waiting for new ticket");
 
         thread_state = TS_TICKET_REVOKED;
         pthread_cond_broadcast(&this->thread_state_change);
@@ -368,7 +307,7 @@ static void *atmo_grab_loop (void *this_gen) {
         thread_state = TS_RUNNING;
         pthread_cond_broadcast(&this->thread_state_change);
 
-        DFATMO_LOG(LOG_INFO, "grab thread got new ticket (revoke=%d)", ticket->ticket_revoked);
+        DFATMO_LOG(DFLOG_INFO, "grab thread got new ticket (revoke=%d)", ticket->ticket_revoked);
 
         gettimeofday(&tvlast, NULL);
         continue;
@@ -377,7 +316,7 @@ static void *atmo_grab_loop (void *this_gen) {
       thread_state = TS_SUSPENDED;
       pthread_cond_broadcast(&this->thread_state_change);
 
-      DFATMO_LOG(LOG_INFO, "grab thread suspended");
+      DFATMO_LOG(DFLOG_INFO, "grab thread suspended");
     }
 
     if (thread_state == TS_SUSPENDED || !this->port)
@@ -397,11 +336,11 @@ static void *atmo_grab_loop (void *this_gen) {
     if (!frame) {
       frame = xine_new_grab_video_frame(port->stream);
       if (!frame) {
-        DFATMO_LOG(LOG_ERROR, "frame grabbing not supported!");
+        DFATMO_LOG(DFLOG_ERROR, "frame grabbing not supported!");
         break;
       }
 
-      DFATMO_LOG(LOG_INFO, "grab thread resumed");
+      DFATMO_LOG(DFLOG_INFO, "grab thread resumed");
     }
 
     pthread_mutex_unlock(&this->lock);
@@ -436,39 +375,13 @@ static void *atmo_grab_loop (void *this_gen) {
       frame->flags = XINE_GRAB_VIDEO_FRAME_FLAGS_CONTINUOUS | XINE_GRAB_VIDEO_FRAME_FLAGS_WAIT_NEXT;
       if (!(rc = frame->grab(frame))) {
         if (frame->width == analyze_width && frame->height == analyze_height) {
-          int img_size = analyze_width * analyze_height;
-
-            /* allocate hsv and weight images */
-          if (img_size > ad->alloc_img_size) {
-            free(ad->hsv_img);
-            free(ad->weight);
-            ad->alloc_img_size = 0;
-            ad->hsv_img = (hsv_color_t *) malloc(img_size * sizeof(hsv_color_t));
-            ad->weight = (uint8_t *) malloc(img_size * ad->sum_channels * sizeof(uint8_t));
-            if (ad->hsv_img == NULL || ad->weight == NULL) {
-              DFATMO_LOG(LOG_ERROR, "allocating image memory failed!");
-              pthread_mutex_lock(&this->lock);
-              break;
-            }
-            ad->alloc_img_size = img_size;
-            ad->analyze_width = 0;
-            ad->analyze_height = 0;
-            ad->edge_weighting = 0;
-          }
-          ad->img_size = img_size;
-
-            /* calculate weight image */
-          int edge_weighting = ad->active_parm.edge_weighting;
-          if (analyze_width != ad->analyze_width || analyze_height != ad->analyze_height || edge_weighting != ad->edge_weighting) {
-            ad->edge_weighting = edge_weighting;
-            ad->analyze_width = analyze_width;
-            ad->analyze_height = analyze_height;
-            calc_weight(ad);
-            DFATMO_LOG(LOG_INFO, "analyze size %dx%d, grab %dx%d@%d,%d", analyze_width, analyze_height, grab_width, grab_height, frame->crop_left, frame->crop_top);
+          if (configure_analyze_size(ad, analyze_width, analyze_height)) {
+            pthread_mutex_lock(&this->lock);
+            break;
           }
 
             /* analyze grabbed image */
-          calc_hsv_image_from_rgb(ad->hsv_img, frame->img, img_size);
+          calc_hsv_image_from_rgb(ad->hsv_img, frame->img, (analyze_width * analyze_height));
           calc_hue_hist(ad);
           calc_windowed_hue_hist(ad);
           calc_most_used_hue(ad);
@@ -481,14 +394,14 @@ static void *atmo_grab_loop (void *this_gen) {
             calc_average_brightness(ad);
           pthread_mutex_lock(&this->lock);
           calc_rgb_values(ad);
-          DFATMO_LOG(LOG_DEBUG, "grab %ld.%03ld: vpts=%ld", tvlast.tv_sec, tvlast.tv_usec / 1000, frame->vpts);
+          DFATMO_LOG(DFLOG_DEBUG, "grab %ld.%03ld: vpts=%ld", tvlast.tv_sec, tvlast.tv_usec / 1000, frame->vpts);
           continue;
         }
       } else {
         if (rc < 0)
-          DFATMO_LOG(LOG_INFO, "grab failed!");
+          DFATMO_LOG(DFLOG_INFO, "grab failed!");
         if (rc > 0)
-          DFATMO_LOG(LOG_DEBUG, "grab timed out!");
+          DFATMO_LOG(DFLOG_DEBUG, "grab timed out!");
       }
     }
 
@@ -514,7 +427,7 @@ static void *atmo_grab_loop (void *this_gen) {
 #endif
   }
 
-  DFATMO_LOG(LOG_INFO, "grab thread terminating");
+  DFATMO_LOG(DFLOG_INFO, "grab thread terminating");
 
     /* free grab frame */
   if (frame)
@@ -530,7 +443,7 @@ static void *atmo_grab_loop (void *this_gen) {
 
   ticket->release(ticket, 0);
 
-  DFATMO_LOG(LOG_INFO, "grab thread terminated");
+  DFATMO_LOG(DFLOG_INFO, "grab thread terminated");
 
   return NULL;
 }
@@ -541,7 +454,7 @@ static void *atmo_output_loop (void *this_gen) {
   atmo_driver_t *ad = &this->ad;
   xine_ticket_t *ticket = this->post_plugin.running_ticket;
   post_video_port_t *port = NULL;
-  int colors_size = 0, init = 1;
+  int init = 1;
   struct timeval tvnow, tvlast, tvdiff, tvtimeout, tvfirst;
   struct timespec ts;
   int thread_state = TS_RUNNING;
@@ -551,7 +464,7 @@ static void *atmo_output_loop (void *this_gen) {
   pthread_cond_broadcast(&this->thread_state_change);
   pthread_mutex_unlock(&this->lock);
 
-  DFATMO_LOG(LOG_INFO, "output thread running");
+  DFATMO_LOG(DFLOG_INFO, "output thread running");
 
   ticket->acquire(ticket, 0);
 
@@ -580,12 +493,12 @@ static void *atmo_output_loop (void *this_gen) {
 
     if (ticket->ticket_revoked || thread_state == TS_SUSPEND) {
       if (turn_lights_off(ad))
-        DFATMO_LOG(LOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
+        DFATMO_LOG(DFLOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
 
       init = 1;
 
       if (ticket->ticket_revoked) {
-        DFATMO_LOG(LOG_INFO, "output thread waiting for new ticket");
+        DFATMO_LOG(DFLOG_INFO, "output thread waiting for new ticket");
 
         thread_state = TS_TICKET_REVOKED;
         pthread_cond_broadcast(&this->thread_state_change);
@@ -600,7 +513,7 @@ static void *atmo_output_loop (void *this_gen) {
         thread_state = TS_RUNNING;
         pthread_cond_broadcast(&this->thread_state_change);
 
-        DFATMO_LOG(LOG_INFO, "output thread got new ticket (revoke=%d)", ticket->ticket_revoked);
+        DFATMO_LOG(DFLOG_INFO, "output thread got new ticket (revoke=%d)", ticket->ticket_revoked);
 
         gettimeofday(&tvlast, NULL);
         continue;
@@ -609,7 +522,7 @@ static void *atmo_output_loop (void *this_gen) {
       thread_state = TS_SUSPENDED;
       pthread_cond_broadcast(&this->thread_state_change);
 
-      DFATMO_LOG(LOG_INFO, "output thread suspended");
+      DFATMO_LOG(DFLOG_INFO, "output thread suspended");
     }
 
     if (thread_state == TS_SUSPENDED || !this->port)
@@ -626,78 +539,26 @@ static void *atmo_output_loop (void *this_gen) {
 
     if (init) {
       init = 0;
-
-      colors_size = ad->sum_channels * sizeof(rgb_color_t);
       reset_filters(ad);
-
       gettimeofday(&tvfirst, NULL);
-
-      DFATMO_LOG(LOG_INFO, "output thread resumed");
+      DFATMO_LOG(DFLOG_INFO, "output thread resumed");
     }
 
-      /* Transfer analyzed colors into filtered colors */
-    switch (ad->active_parm.filter) {
-    case FILTER_PERCENTAGE:
-      percent_filter(ad, ad->analyzed_colors);
-      break;
-    case FILTER_COMBINED:
-      mean_filter(ad, ad->analyzed_colors);
-      break;
-    default:
-        /* no filtering */
-      memcpy(ad->filtered_colors, ad->analyzed_colors, colors_size);
-    }
+    apply_filters(ad);
 
     pthread_mutex_unlock(&this->lock);
 
     timersub(&tvlast, &tvfirst, &tvdiff);
     if ((tvdiff.tv_sec * 1000 + tvdiff.tv_usec / 1000) >= ad->active_parm.start_delay) {
-
-        /* Initialize delay filter queue */
-      int filter_delay = ad->active_parm.filter_delay;
-      int output_rate = ad->active_parm.output_rate;
-      if (ad->filter_delay != filter_delay || ad->output_rate != output_rate) {
-        free(ad->delay_filter_queue);
-        ad->filter_delay = -1;
-        ad->delay_filter_queue_length = ((filter_delay >= output_rate) ? filter_delay / output_rate + 1: 0) * ad->sum_channels;
-        if (ad->delay_filter_queue_length) {
-          ad->delay_filter_queue = (rgb_color_t *) calloc(ad->delay_filter_queue_length, sizeof(rgb_color_t));
-          if (ad->delay_filter_queue == NULL) {
-            DFATMO_LOG(LOG_ERROR, "allocating delay filter queue failed!");
-            pthread_mutex_lock(&this->lock);
-            break;
-          }
-        }
-        else
-          ad->delay_filter_queue = NULL;
-        ad->filter_delay = filter_delay;
-        ad->output_rate = output_rate;
-        ad->delay_filter_queue_pos = 0;
+      if (apply_delay_filter(ad)) {
+        pthread_mutex_lock(&this->lock);
+        break;
       }
-
-        /* Transfer filtered colors to output colors */
-      if (ad->delay_filter_queue) {
-        int outp = ad->delay_filter_queue_pos + ad->sum_channels;
-        if (outp >= ad->delay_filter_queue_length)
-          outp = 0;
-
-        memcpy(&ad->delay_filter_queue[ad->delay_filter_queue_pos], ad->filtered_colors, colors_size);
-        memcpy(ad->filtered_output_colors, &ad->delay_filter_queue[outp], colors_size);
-
-        ad->delay_filter_queue_pos = outp;
-      }
-      else
-        memcpy(ad->filtered_output_colors, ad->filtered_colors, colors_size);
-
-
       apply_gamma_correction(ad);
       apply_white_calibration(ad);
-
-        /* Output colors */
-      if (memcmp(ad->filtered_output_colors, ad->last_output_colors, colors_size)) {
-        if (ad->output_driver->output_colors(ad->output_driver, ad->filtered_output_colors, ad->last_output_colors))
-          DFATMO_LOG(LOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
-        memcpy(ad->last_output_colors, ad->filtered_output_colors, colors_size);
+      if (send_output_colors(ad, ad->filtered_output_colors, 0)) {
+        pthread_mutex_lock(&this->lock);
+        break;
       }
     }
 
@@ -723,7 +584,7 @@ static void *atmo_output_loop (void *this_gen) {
 #endif
   }
 
-  DFATMO_LOG(LOG_INFO, "output thread terminating");
+  DFATMO_LOG(DFLOG_INFO, "output thread terminating");
 
   if (this->output_thread_state == &thread_state)
     this->output_thread_state = NULL;
@@ -735,7 +596,7 @@ static void *atmo_output_loop (void *this_gen) {
 
   ticket->release(ticket, 0);
 
-  DFATMO_LOG(LOG_INFO, "output thread terminated");
+  DFATMO_LOG(DFLOG_INFO, "output thread terminated");
 
   return NULL;
 }
@@ -755,7 +616,7 @@ static int wait_for_thread_state_change(atmo_post_plugin_t *this) {
   ts.tv_nsec *= 1000;
 
   if (pthread_cond_timedwait(&this->thread_state_change, &this->lock, &ts) == ETIMEDOUT) {
-    DFATMO_LOG(LOG_ERROR, "timeout while waiting for thread state change!");
+    DFATMO_LOG(DFLOG_ERROR, "timeout while waiting for thread state change!");
     return 0;
   }
   return 1;
@@ -776,13 +637,13 @@ static void start_threads(atmo_post_plugin_t *this) {
     int err = 0;
     if (this->grab_thread_state == NULL) {
       if ((err = pthread_create (&this->grab_thread, &pth_attrs, atmo_grab_loop, this))) {
-        DFATMO_LOG(LOG_ERROR, "can't create grab thread: %s", strerror(err));
+        DFATMO_LOG(DFLOG_ERROR, "can't create grab thread: %s", strerror(err));
         grab_running = 1;
       }
     }
     if (!err && this->output_thread_state == NULL) {
       if ((err = pthread_create (&this->output_thread, &pth_attrs, atmo_output_loop, this))) {
-        DFATMO_LOG(LOG_ERROR, "can't create output thread: %s", strerror(err));
+        DFATMO_LOG(DFLOG_ERROR, "can't create output thread: %s", strerror(err));
         output_running = 1;
       }
     }
@@ -907,70 +768,15 @@ static void configure(atmo_post_plugin_t *this) {
         strcmp(ad->active_parm.driver_path, ad->parm.driver_path) ||
         strcmp(ad->active_parm.driver_param, ad->parm.driver_param)) {
     stop_threads(this);
-
-    if (close_output_driver(ad))
-      DFATMO_LOG(LOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
-    else
-      DFATMO_LOG(LOG_INFO, "output driver closed");
-
-    if (strcmp(ad->active_parm.driver, ad->parm.driver)) {
-      unload_output_driver(ad);
-      DFATMO_LOG(LOG_INFO, "output driver unloaded");
-    }
+    close_output_driver(ad);
+    unload_output_driver(ad);
   }
 
   if (ad->parm.enabled) {
     atmo_parameters_t parm = ad->parm;
-    int start = 1, send = 0;
 
-    if (!ad->driver_opened) {
-      if (ad->output_driver == NULL) {
-#ifndef OUTPUT_DRIVER_PATH
-#include <xine/plugin_catalog.h>
-
-          /* get plugin path */
-        char *plugin_filename = NULL, *sep = NULL, path[256];
-        int len = 0;
-        plugin_node_t *plugin_node = (plugin_node_t*) this->post_plugin.node;
-        if (plugin_node != NULL && plugin_node->file != NULL)
-          plugin_filename = plugin_node->file->filename;
-        if (plugin_filename != NULL)
-          sep = strrchr(plugin_filename, '/');
-        if (sep)
-          len = sep - plugin_filename;
-        if (len > (sizeof(ad->parm.driver_path) - 8))
-          len = 0;
-        if (len > 0) {
-          memcpy(ad->parm.driver_path, plugin_filename, len);
-          ad->parm.driver_path[len] = 0;
-          strcat(ad->parm.driver_path, "/dfatmo");
-          DFATMO_LOG(LOG_INFO, "output driver search path: '%s'", ad->parm.driver_path);
-        } else {
-          DFATMO_LOG(LOG_ERROR, "could not determine plugin installation path!");
-          start = 0;
-        }
-#endif
-        if (start) {
-          if (load_output_driver(ad)) {
-            DFATMO_LOG(LOG_ERROR, "loading output driver fails!");
-            start = 0;
-          } else
-            DFATMO_LOG(LOG_INFO, "output driver loaded");
-        }
-      }
-      if (start && ad->output_driver->open(ad->output_driver, &ad->parm)) {
-        DFATMO_LOG(LOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
-        start = 0;
-      }
-      if (start) {
-        ad->driver_opened = 1;
-        send = 1;
-        DFATMO_LOG(LOG_INFO, "output driver opened");
-      }
-    } else if (ad->output_driver->configure(ad->output_driver, &ad->parm)) {
-      DFATMO_LOG(LOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
-      start = 0;
-    }
+    int send = !ad->driver_opened;
+    int start = !open_output_driver(ad);
 
     if (join_post_api_parameters(&atmo_param_descr, &parm, &ad->parm)) {
       char buf[512];
@@ -988,27 +794,20 @@ static void configure(atmo_post_plugin_t *this) {
                     ad->active_parm.bottom_left != ad->parm.bottom_left ||
                     ad->active_parm.bottom_right != ad->parm.bottom_right) {
       free_channels(ad);
-      if (config_channels(ad)) {
-        DFATMO_LOG(LOG_ERROR, "channel configuration fails!");
+      if (config_channels(ad))
         start = 0;
-      }
       send = 1;
     }
 
     ad->active_parm = ad->parm;
 
-    if (!ad->sum_channels) {
-      DFATMO_LOG(LOG_ERROR, "no channels configured!");
+      /* send first initial color packet */
+    if (start && send && send_output_colors(ad, ad->output_colors, 1))
       start = 0;
-    }
 
-    if (start) {
-        /* send first initial color packet */
-      if (send && ad->output_driver->output_colors(ad->output_driver, ad->output_colors, NULL))
-        DFATMO_LOG(LOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
-
+    if (start)
       start_threads(this);
-    } else
+    else
       stop_threads(this);
   }
 }
@@ -1022,7 +821,7 @@ static void atmo_video_open(xine_video_port_t *port_gen, xine_stream_t *stream) 
   post_video_port_t *port = (post_video_port_t *)port_gen;
   atmo_post_plugin_t *this = (atmo_post_plugin_t *) port->post;
 
-  DFATMO_LOG(LOG_INFO, "video open");
+  DFATMO_LOG(DFLOG_INFO, "video open");
   _x_post_rewire(port->post);
   _x_post_inc_usage(port);
 
@@ -1033,7 +832,7 @@ static void atmo_video_open(xine_video_port_t *port_gen, xine_stream_t *stream) 
 
   configure(this);
   pthread_mutex_unlock(&this->port_lock);
-  DFATMO_LOG(LOG_INFO, "video opened");
+  DFATMO_LOG(DFLOG_INFO, "video opened");
 }
 
 
@@ -1041,7 +840,7 @@ static void atmo_video_close(xine_video_port_t *port_gen, xine_stream_t *stream)
   post_video_port_t *port = (post_video_port_t *)port_gen;
   atmo_post_plugin_t *this = (atmo_post_plugin_t *) port->post;
 
-  DFATMO_LOG(LOG_INFO, "video close");
+  DFATMO_LOG(DFLOG_INFO, "video close");
   pthread_mutex_lock(&this->port_lock);
   suspend_threads(this);
 
@@ -1051,7 +850,7 @@ static void atmo_video_close(xine_video_port_t *port_gen, xine_stream_t *stream)
   pthread_mutex_unlock(&this->port_lock);
 
   _x_post_dec_usage(port);
-  DFATMO_LOG(LOG_INFO, "video closed");
+  DFATMO_LOG(DFLOG_INFO, "video closed");
 }
 
 
@@ -1074,7 +873,7 @@ static int atmo_set_parameters(xine_post_t *this_gen, void *parm_gen)
     char buf[512];
     build_post_api_parameter_string(buf, sizeof(buf), &atmo_param_descr, &ad->parm, &this->default_parm);
     this->post_plugin.xine->config->update_string(this->post_plugin.xine->config, "post.dfatmo.parameters", buf);
-    DFATMO_LOG(LOG_INFO, "set parameters");
+    DFATMO_LOG(DFLOG_INFO, "set parameters");
 
     pthread_mutex_lock(&this->port_lock);
     if (this->port) {
@@ -1086,8 +885,7 @@ static int atmo_set_parameters(xine_post_t *this_gen, void *parm_gen)
       } else {
         if (ad->active_parm.enabled) {
           stop_threads(this);
-          if (close_output_driver(ad))
-            DFATMO_LOG(LOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
+          close_output_driver(ad);
         }
       }
       ad->active_parm.enabled = ad->parm.enabled;
@@ -1126,24 +924,21 @@ static void atmo_dispose(post_plugin_t *this_gen)
   atmo_post_plugin_t *this = (atmo_post_plugin_t *) this_gen;
   atmo_driver_t *ad = &this->ad;
 
-  DFATMO_LOG(LOG_INFO, "dispose plugin");
+  DFATMO_LOG(DFLOG_INFO, "dispose plugin");
   stop_threads(this);
 
   if (_x_post_dispose(this_gen)) {
-    if (close_output_driver(ad))
-      DFATMO_LOG(LOG_ERROR, "output driver error: %s", ad->output_driver->errmsg);
+    close_output_driver(ad);
     unload_output_driver(ad);
     free_channels(ad);
-    free(ad->hsv_img);
-    free(ad->weight);
-    free(ad->delay_filter_queue);
+    free_analyze_images(ad);
     pthread_mutex_destroy(&this->lock);
     pthread_mutex_destroy(&this->port_lock);
     pthread_cond_destroy(&this->thread_state_change);
     free(this);
-    DFATMO_LOG(LOG_INFO, "final dispose");
+    DFATMO_LOG(DFLOG_INFO, "final dispose");
   }
-  DFATMO_LOG(LOG_INFO, "disposed plugin");
+  DFATMO_LOG(DFLOG_INFO, "disposed plugin");
 }
 
 
@@ -1161,7 +956,7 @@ static post_plugin_t *atmo_open_plugin(post_class_t *class_gen,
       { atmo_set_parameters, atmo_get_parameters,
         atmo_get_param_descr, atmo_get_help };
 
-  DFATMO_LOG(LOG_INFO, "open plugin");
+  DFATMO_LOG(DFLOG_INFO, "open plugin");
 
   if (!video_target || !video_target[0])
     return NULL;
@@ -1215,7 +1010,7 @@ static post_plugin_t *atmo_open_plugin(post_class_t *class_gen,
   if (!param || strcmp(param, buf))
     config->update_string(config, "post.dfatmo.parameters", buf);
 
-  DFATMO_LOG(LOG_INFO, "plugin opened");
+  DFATMO_LOG(DFLOG_INFO, "plugin opened");
   return &this->post_plugin;
 }
 
@@ -1246,13 +1041,13 @@ static void *atmo_init_plugin(xine_t *xine, void *data)
   xine_instance = xine;
   switch (xine->verbosity) {
   case XINE_VERBOSITY_LOG:
-    act_log_level = LOG_INFO;
+    act_log_level = DFLOG_INFO;
     break;
   case XINE_VERBOSITY_DEBUG:
-    act_log_level = LOG_DEBUG;
+    act_log_level = DFLOG_DEBUG;
     break;
   default:
-    act_log_level = LOG_ERROR;
+    act_log_level = DFLOG_ERROR;
   }
 
   atmo_post_class_t *class = (atmo_post_class_t *) calloc(1, sizeof(atmo_post_class_t));

@@ -206,17 +206,17 @@ static int df10ch_control_in_transfer(df10ch_ctrl_t *ctrl, uint8_t req, uint16_t
           if (n >= 0 || n != LIBUSB_ERROR_PIPE)
               break;
           ++retrys;
-          DFATMO_LOG(LOG_ERROR, "%s: sending USB control transfer message %d failed (pipe error): retry %d", ctrl->id, req, retrys);
+          DFATMO_LOG(DFLOG_ERROR, "%s: sending USB control transfer message %d failed (pipe error): retry %d", ctrl->id, req, retrys);
       }
   }
 
   if (n < 0) {
-      DFATMO_LOG(LOG_ERROR, "%s: sending USB control transfer message %d failed: %s", ctrl->id, req, libusb_strerror(n));
+      DFATMO_LOG(DFLOG_ERROR, "%s: sending USB control transfer message %d failed: %s", ctrl->id, req, libusb_strerror(n));
       return -1;
   }
 
   if (n != buflen) {
-      DFATMO_LOG(LOG_ERROR, "%s: sending USB control transfer message %d failed: read %d bytes but expected %d bytes", ctrl->id, req, n, buflen);
+      DFATMO_LOG(DFLOG_ERROR, "%s: sending USB control transfer message %d failed: read %d bytes but expected %d bytes", ctrl->id, req, n, buflen);
       return -1;
   }
 
@@ -289,7 +289,7 @@ static int df10ch_wait_for_replys(df10ch_output_driver_t *this) {
         strcpy(request_errmsg, "N/A");
       else
         df10ch_comm_errmsg(data[0], request_errmsg);
-      DFATMO_LOG(LOG_ERROR, "%s: comm error USB: %s, PWM: %s", ctrl->id, reply_errmsg, request_errmsg);
+      DFATMO_LOG(DFLOG_ERROR, "%s: comm error USB: %s, PWM: %s", ctrl->id, reply_errmsg, request_errmsg);
     }
     ctrl = ctrl->next;
   }
@@ -304,7 +304,7 @@ static void LIBUSB_CALL df10ch_reply_cb(struct libusb_transfer *transfer) {
   if (transfer->status != LIBUSB_TRANSFER_COMPLETED && transfer->status != LIBUSB_TRANSFER_CANCELLED) {
     ++ctrl->driver->transfer_err_cnt;
     ctrl->transfer_error = 1;
-    DFATMO_LOG(LOG_ERROR, "%s: submitting USB control transfer message failed: %s\n", ctrl->id, df10ch_usb_transfer_errmsg(transfer->status));
+    DFATMO_LOG(DFLOG_ERROR, "%s: submitting USB control transfer message failed: %s\n", ctrl->id, df10ch_usb_transfer_errmsg(transfer->status));
   }
 }
 
@@ -345,36 +345,36 @@ static int df10ch_driver_open(output_driver_t *this_gen, atmo_parameters_t *para
 
     rc = libusb_get_device_descriptor(d, &desc);
     if (rc < 0) {
-      DFATMO_LOG(LOG_ERROR, "USB[%d,%d]: getting USB device descriptor failed: %s", busnum, devnum, libusb_strerror(rc));
+      DFATMO_LOG(DFLOG_ERROR, "USB[%d,%d]: getting USB device descriptor failed: %s", busnum, devnum, libusb_strerror(rc));
     }
     else if (desc.idVendor == DF10CH_USB_CFG_VENDOR_ID && desc.idProduct == DF10CH_USB_CFG_PRODUCT_ID) {
       libusb_device_handle *hdl = NULL;
       rc = libusb_open(d, &hdl);
       if (rc < 0) {
-        DFATMO_LOG(LOG_ERROR, "USB[%d,%d]: open of USB device failed: %s", busnum, devnum, libusb_strerror(rc));
+        DFATMO_LOG(DFLOG_ERROR, "USB[%d,%d]: open of USB device failed: %s", busnum, devnum, libusb_strerror(rc));
       }
       else {
         unsigned char buf[256];
         rc = libusb_get_string_descriptor_ascii(hdl, desc.iManufacturer, buf, sizeof(buf));
         if (rc < 0) {
-          DFATMO_LOG(LOG_ERROR, "USB[%d,%d]: getting USB manufacturer string failed: %s", busnum, devnum, libusb_strerror(rc));
+          DFATMO_LOG(DFLOG_ERROR, "USB[%d,%d]: getting USB manufacturer string failed: %s", busnum, devnum, libusb_strerror(rc));
         }
         else if (rc == sizeof(DF10CH_USB_CFG_VENDOR_NAME) - 1 && !memcmp(buf, DF10CH_USB_CFG_VENDOR_NAME, rc)) {
           rc = libusb_get_string_descriptor_ascii(hdl, desc.iProduct, buf, sizeof(buf));
           if (rc < 0) {
-            DFATMO_LOG(LOG_ERROR, "USB[%d,%d]: getting USB product string failed: %s", busnum, devnum, libusb_strerror(rc));
+            DFATMO_LOG(DFLOG_ERROR, "USB[%d,%d]: getting USB product string failed: %s", busnum, devnum, libusb_strerror(rc));
           }
           else if (rc == sizeof(DF10CH_USB_CFG_PRODUCT) - 1 && !memcmp(buf, DF10CH_USB_CFG_PRODUCT, rc)) {
             char id[32];
             snprintf(id, sizeof(id), "DF10CH[%d,%d]", busnum, devnum);
             rc = libusb_set_configuration(hdl, 1);
             if (rc < 0) {
-              DFATMO_LOG(LOG_ERROR, "%s: setting USB configuration failed: %s", id, libusb_strerror(rc));
+              DFATMO_LOG(DFLOG_ERROR, "%s: setting USB configuration failed: %s", id, libusb_strerror(rc));
             }
             else {
               rc = libusb_claim_interface(hdl, 0);
               if (rc < 0) {
-                DFATMO_LOG(LOG_ERROR, "%s: claiming USB interface failed: %s", id, libusb_strerror(rc));
+                DFATMO_LOG(DFLOG_ERROR, "%s: claiming USB interface failed: %s", id, libusb_strerror(rc));
               }
               else {
                 df10ch_ctrl_t *ctrl = (df10ch_ctrl_t *) calloc(1, sizeof(df10ch_ctrl_t));
@@ -384,7 +384,7 @@ static int df10ch_driver_open(output_driver_t *this_gen, atmo_parameters_t *para
                 ctrl->dev = hdl;
                 ctrl->idx_serial_number = desc.iSerialNumber;
                 strcpy(ctrl->id, id);
-                DFATMO_LOG(LOG_INFO, "%s: device opened", id);
+                DFATMO_LOG(DFLOG_INFO, "%s: device opened", id);
                 continue;
               }
             }
@@ -620,7 +620,7 @@ static int df10ch_driver_close(output_driver_t *this_gen) {
   df10ch_wait_for_replys(this);
   df10ch_dispose(this);
 
-  DFATMO_LOG(LOG_INFO, "average transmit latency: %d [us]", this->avg_transmit_latency);
+  DFATMO_LOG(DFLOG_INFO, "average transmit latency: %d [us]", this->avg_transmit_latency);
 
   if (this->transfer_err_cnt) {
     snprintf(this->output_driver.errmsg, sizeof(this->output_driver.errmsg), "%d transfer errors happen", this->transfer_err_cnt);
@@ -642,11 +642,11 @@ static int df10ch_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
 
 #ifdef WIN32
   FILETIME act_time, start_time;
-  if (IS_LOG_LEVEL(LOG_INFO))
+  if (IS_LOG_LEVEL(DFLOG_INFO))
     GetSystemTimeAsFileTime (&start_time);
 #else
   struct timeval act_time, start_time, latency_time;
-  if (IS_LOG_LEVEL(LOG_INFO))
+  if (IS_LOG_LEVEL(DFLOG_INFO))
     gettimeofday(&start_time, NULL);
 #endif
 
@@ -729,7 +729,7 @@ static int df10ch_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
   if (df10ch_wait_for_replys(this))
     return -1;
 
-  if (IS_LOG_LEVEL(LOG_INFO)) {
+  if (IS_LOG_LEVEL(DFLOG_INFO)) {
     int latency;
 #ifdef WIN32
     GetSystemTimeAsFileTime (&act_time);
@@ -742,7 +742,7 @@ static int df10ch_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
     this->avg_transmit_latency = (this->avg_transmit_latency + latency) / 2;
     if (latency > this->max_transmit_latency) {
       this->max_transmit_latency = latency;
-      DFATMO_LOG(LOG_INFO, "max/avg transmit latency: %d/%d [us]", this->max_transmit_latency, this->avg_transmit_latency);
+      DFATMO_LOG(DFLOG_INFO, "max/avg transmit latency: %d/%d [us]", this->max_transmit_latency, this->avg_transmit_latency);
     }
   }
 

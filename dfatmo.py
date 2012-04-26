@@ -65,11 +65,15 @@ def log(level, msg):
 
     
 def displayNotification(level, msg):
-    log(level, msg)
     if level == LOG_ERROR:
         xbmc.executebuiltin('Notification("DFAtmo","' + str(msg) + '",20000,' + addonIconFile + ')')
     else:
         xbmc.executebuiltin('Notification("DFAtmo","' + str(msg) + '",3000,' + addonIconFile + ')')
+
+
+def displayNotificationAndLog(level, msg):
+    log(level, msg)
+    displayNotification(level, msg)
 
 
 if ( __name__ == "__main__" ):
@@ -83,7 +87,7 @@ try:
     if xbmc.CAPTURE_STATE_DONE:
         pass
 except:
-    displayNotification(LOG_ERROR, "XBMC does not have RenderCapture interface patch!")
+    displayNotificationAndLog(LOG_ERROR, "XBMC does not have RenderCapture interface patch!")
     sys.exit(1)
 
 
@@ -110,11 +114,11 @@ if dfAtmoInstDir:
 try:
     import atmodriver
 except ImportError as err:
-    displayNotification(LOG_ERROR, "Loading native atmodriver failed: " + str(err))
+    displayNotificationAndLog(LOG_ERROR, "Loading native atmodriver failed: " + str(err))
     sys.exit(1)
 
 if atmodriver.getDriverVersion() != DFATMO_DRIVER_VERSION:
-    displayNotification(LOG_ERROR, "Wrong version of native atmodriver!")
+    displayNotificationAndLog(LOG_ERROR, "Wrong version of native atmodriver!")
     sys.exit(1)
 
 
@@ -157,6 +161,7 @@ dfatmoParmList = (
     ( 'i', 'filter_length' ),
     ( 'i', 'filter_threshold' ),
     ( 'i', 'filter_delay' ),
+    ( 'i', 'output_rate' ),
     ( 'i', 'wc_red' ),
     ( 'i', 'wc_green' ),
     ( 'i', 'wc_blue' ),
@@ -212,7 +217,7 @@ class OutputThread(threading.Thread):
         nextLoopTime = 0.0
         outputStartTime = 0.0
         lightsOn = False
-        outputCount = 0
+        outputCount = 1
         writeFailureRetry = False
         try:
             ad.resetFilters()
@@ -232,7 +237,7 @@ class OutputThread(threading.Thread):
                     if not lightsOn:
                         lightsOn = True
                         outputStartTime = time.time()
-                        outputCount = 0
+                        outputCount = 1
                     colors = ad.filterAnalyzedColors(colors)
                     colors = ad.filterOutputColors(colors)
                     try:
@@ -250,8 +255,7 @@ class OutputThread(threading.Thread):
                                 break
             if lightsOn:
                 od.turnLightsOff()
-                if outputCount:
-                    log(LOG_INFO, "average output interval: %.3f" % ((time.time() - outputStartTime) / outputCount))
+                log(LOG_INFO, "average output interval: %.3f" % ((time.time() - outputStartTime) / outputCount))
         except atmodriver.error as err:
             displayNotification(LOG_ERROR, err)
         log(LOG_INFO, "output thread stopped")
@@ -287,7 +291,7 @@ class CaptureThread(threading.Thread):
 
         if not os.path.isfile(addonConfigFile):
             self.configFileTime = 0
-            displayNotification(LOG_ERROR, "Addon not configured!")
+            displayNotificationAndLog(LOG_ERROR, "Addon not configured!")
             return False
         self.configFileTime = os.path.getmtime(addonConfigFile)
 
@@ -386,7 +390,7 @@ class CaptureThread(threading.Thread):
 
         if self.useCustomDriver:
             if len(self.customDriver) == 0:
-                displayNotification(LOG_ERROR, "No custom driver specified!")
+                displayNotificationAndLog(LOG_ERROR, "No custom driver specified!")
                 return False
 
             try:
@@ -403,7 +407,7 @@ class CaptureThread(threading.Thread):
                     return False
                 
                 if self.outputDriver.getInterfaceVersion() != OUTPUT_DRIVER_INTERFACE_VERSION:
-                    displayNotification(LOG_ERROR, "Script custom driver has wrong interface version")
+                    displayNotificationAndLog(LOG_ERROR, "Script custom driver has wrong interface version")
                     return False
     
                 try:
@@ -466,10 +470,10 @@ class CaptureThread(threading.Thread):
         nextCaptureTime = 0.0
         nextConfigUpdateTime = 0.0
         videoStartTime = 0.0
-        captureCount = 0
+        captureCount = 1
         instantConfigured = False
 
-        displayNotification(LOG_INFO, "Service running")
+        displayNotificationAndLog(LOG_INFO, "Service running")
         while self.running > 0 or (self.running == -1 and not xbmc.abortRequested):
             st = capture.getCaptureState()
             if st != xbmc.CAPTURE_STATE_DONE and st != xbmc.CAPTURE_STATE_FAILED:
@@ -512,7 +516,7 @@ class CaptureThread(threading.Thread):
                     log(LOG_INFO, "start playing video: aspect ratio: %.4f" % capture.getAspectRatio())
                     videoPlaying = True
                     videoStartTime = time.time()
-                    captureCount = 0
+                    captureCount = 1
                     self.analyzedColors = None
                     ot = OutputThread(self, ad, self.outputDriver)
                     ot.start()
@@ -535,8 +539,7 @@ class CaptureThread(threading.Thread):
                 ot.stop()
                 ot = None
 
-                if captureCount:
-                    log(LOG_INFO, "average capture interval: %.3f" % ((time.time() - videoStartTime) / captureCount))
+                log(LOG_INFO, "average capture interval: %.3f" % ((time.time() - videoStartTime) / captureCount))
 
                 if instantConfigured:
                     instantConfigured = False
@@ -553,10 +556,9 @@ class CaptureThread(threading.Thread):
         if videoPlaying:
             ot.stop()
             ot = None
-            if captureCount:
-                log(LOG_INFO, "average capture interval: %.3f" % format((time.time() - videoStartTime) / captureCount))
+            log(LOG_INFO, "average capture interval: %.3f" % format((time.time() - videoStartTime) / captureCount))
 
-        displayNotification(LOG_INFO, "Service stopped")
+        displayNotificationAndLog(LOG_INFO, "Service stopped")
 
     
 def runService():

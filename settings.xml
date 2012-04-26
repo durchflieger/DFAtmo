@@ -2,16 +2,16 @@
 	<category label="General">
 		<setting id="enabled" label="Launch on startup" type="bool" default="false"/>
 		<setting id="driver" label="Output driver" type="labelenum" values="null|file|serial|df10ch|custom" default="null"/>
-		<setting id="custom_driver" label="Custom driver" value="" type="text" enable="eq(-1,4)"/>
+		<setting id="custom_driver" label="Output driver name" value="" type="text" enable="eq(-1,4)"/>
 		<setting id="driver_param" label="Driver parameters" value="" type="text" enable="!eq(-2,0)+!eq(-2,3)"/>
 		<setting id="log_level" label="Log level" type="enum" values="NONE|ERROR|INFO|DEBUG" default="1"/>
 	</category>
 	
 	<category label="Areas">
-	    <setting id="top" type="number" label="Sections at top area" default="0" />
-	    <setting id="bottom" type="number" label="Sections at bottom area" default="0" />
-	    <setting id="left" type="number" label="Sections at left area"  default="0" />
-	    <setting id="right" type="number" label="Sections at right area" default="0" />
+	    	<setting id="top" type="number" label="Sections at top area" default="0" />
+	    	<setting id="bottom" type="number" label="Sections at bottom area" default="0" />
+	    	<setting id="left" type="number" label="Sections at left area"  default="0" />
+	    	<setting id="right" type="number" label="Sections at right area" default="0" />
 		<setting id="top_left" label="Activate top left area" type="bool" default="false"/>
 		<setting id="top_right" label="Activate top right area" type="bool" default="false"/>
 		<setting id="bottom_left" label="Activate bottom left area" type="bool" default="false"/>
@@ -20,9 +20,9 @@
 	</category>
 	
 	<category label="Analysis">
-		<setting id="uniform_brightness" label="Calculate uniform brightness" type="bool" default="false"/>
+		<setting id="uniform_brightness" label="Uniform brightness mode" type="bool" default="false"/>
 		<setting id="analyze_size" label="Size of analyze image" type="enum" values="64|128|192|256" default="1"/>
-		<setting id="overscan" label="Ignored overscan border of analyzed image [%1000]" type="number" default="0"/>
+		<setting id="overscan" label="Ignored overscan border [%1000]" type="number" default="0"/>
 		<setting id="edge_weighting" label="Power of edge weighting" type="number" default="60"/>
 		<setting id="darkness_limit" label="Limit for black pixel" type="number" default="1"/>
 		<setting id="analyze_rate" label="Analyze rate [ms]" type="number" default="35"/>
@@ -37,13 +37,14 @@
 		<setting id="filter_smoothness" label="Filter smoothness [%]" type="number" default="50" enable="gt(-1,0)"/>
 		<setting id="filter_length" label="Filter length [ms]" type="number" default="500" enable="gt(-2,1)"/>
 		<setting id="filter_threshold" label="Filter threshold [%]" type="number" default="40" enable="gt(-3,1)"/>
-		<setting id="filter_delay" label="Delay for output send to controller [ms]" type="number" default="0"/>
+		<setting id="filter_delay" label="Output delay [ms]" type="number" default="0"/>
+		<setting id="output_rate" label="Output rate [ms]" type="number" default="20"/>
 	</category>
 	
 	<category label="Calibration">
-		<setting id="wc_red" label="White calibration red" type="number" default="255"/>
-		<setting id="wc_green" label="White calibration green" type="number" default="255"/>
-		<setting id="wc_blue" label="White calibration blue" type="number" default="255"/>
-		<setting id="gamma" label="Gamma correction factor" type="number" default="10"/>
+		<setting id="wc_red" label="Red white calibration" type="number" default="255"/>
+		<setting id="wc_green" label="Green white calibration" type="number" default="255"/>
+		<setting id="wc_blue" label="Blue white calibration" type="number" default="255"/>
+		<setting id="gamma" label="Gamma correction" type="number" default="10"/>
 	</category>
 </settings>

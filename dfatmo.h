@@ -27,10 +27,7 @@
 #define HIDDEN_SYM              __attribute__ ((visibility("hidden")))
 #endif
 
-#define LOG_NONE  0
-#define LOG_ERROR 1
-#define LOG_INFO  2
-#define LOG_DEBUG 3
+enum { DFLOG_NONE = 0, DFLOG_ERROR, DFLOG_INFO, DFLOG_DEBUG };
 #define DFATMO_LOG(ll, ...)     do { if ((ll) <= *dfatmo_log_level) (*dfatmo_log)(ll, __VA_ARGS__); } while (0)
 #define IS_LOG_LEVEL(ll)        ((ll) <= *dfatmo_log_level)
 
@@ -92,23 +89,23 @@ struct output_driver_s {
   uint32_t version;
 
     /* open device and configure for number of channels */
-  int (*open)(output_driver_t *this, atmo_parameters_t *param);
+  int (*open)(output_driver_t *self, atmo_parameters_t *param);
 
     /* instant configure */
-  int (*configure)(output_driver_t *this, atmo_parameters_t *param);
+  int (*configure)(output_driver_t *self, atmo_parameters_t *param);
 
     /* close device */
-  int (*close)(output_driver_t *this);
+  int (*close)(output_driver_t *self);
 
     /* dispose driver */
-  void (*dispose)(output_driver_t *this);
+  void (*dispose)(output_driver_t *self);
 
     /*
      * send RGB color values to device
      * last_colors is NULL when first initial color packet is send
      * order for 'colors' is: top 1,2,3..., bottom 1,2,3..., left 1,2,3..., right 1,2,3..., center, top left, top right, bottom left, bottom right
      */
-  int (*output_colors)(output_driver_t *this, rgb_color_t *new_colors, rgb_color_t *last_colors);
+  int (*output_colors)(output_driver_t *self, rgb_color_t *new_colors, rgb_color_t *last_colors);
 
     /* provide detailed error message here if open of device fails */
   char errmsg[128];

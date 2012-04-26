@@ -28,7 +28,7 @@
 
 #include "dfatmo.h"
 
-static int act_log_level = LOG_ERROR;
+static int act_log_level = DFLOG_ERROR;
 
 static void driver_log(int level, const char *fmt, ...) {
   if (level <= act_log_level) {
@@ -55,7 +55,7 @@ main() {
     // at the USB bus and reading in the configuration.
   parm = calloc(1, sizeof(atmo_parameters_t));
   if (driver->open(driver, parm)) {
-    driver_log(LOG_ERROR, "Could not open driver: %s\n", driver->errmsg);
+    driver_log(DFLOG_ERROR, "Could not open driver: %s\n", driver->errmsg);
   }
 
     // The driver open call returned the areas and some more parameters
@@ -66,7 +66,7 @@ main() {
     // Calculate number of areas.
   num_areas = parm->top + parm->bottom + parm->left + parm->right + parm->center + parm->top_left + parm->top_right + parm->bottom_left + parm->bottom_right;
   if (num_areas < 0) {
-    driver_log(LOG_ERROR, "Controller not configured! Please use DF10CH setup for configuration.\n");
+    driver_log(DFLOG_ERROR, "Controller not configured! Please use DF10CH setup for configuration.\n");
   }
 
     // Allocate colors array for configured number of areas.
@@ -76,7 +76,7 @@ main() {
 
     // Turn off all lights. (colors is initialized to 0)
   if (driver->output_colors(driver, colors, NULL)) {
-    driver_log(LOG_ERROR, "Error while sending color data: %s\n", driver->errmsg);
+    driver_log(DFLOG_ERROR, "Error while sending color data: %s\n", driver->errmsg);
   }
   memcpy(last_colors, colors, colors_size);
 
@@ -87,13 +87,13 @@ main() {
     // Output colors. The output driver uses last_colors to optimize
     // the amount of data that is send to the controller.
   if (driver->output_colors(driver, colors, last_colors)) {
-    driver_log(LOG_ERROR, "Error while sending color data: %s\n", driver->errmsg);
+    driver_log(DFLOG_ERROR, "Error while sending color data: %s\n", driver->errmsg);
   }
   memcpy(last_colors, colors, colors_size);
 
     // Close output driver releasing all devices.
   if (driver->close(driver)) {
-    driver_log(LOG_ERROR, "Error while closing output driver: %s\n", driver->errmsg);
+    driver_log(DFLOG_ERROR, "Error while closing output driver: %s\n", driver->errmsg);
   }
 
     // Destroy driver instance.

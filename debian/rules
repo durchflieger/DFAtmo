@@ -31,6 +31,11 @@ ifneq (NO, $(shell pkg-config --atleast-version=1.1.90 libxine || echo NO))
 XINEPLUGINDIR = $(shell pkg-config --variable=plugindir libxine)
 endif
 
+# Test for vdr-dev package
+ifneq (NO, $(shell [ -f /usr/include/vdr/Make.global ] || echo NO))
+VDRPLUG_MAKE_FLAGS = -f vdrplug.mk DFATMOINSTDIR="/usr" DVBDIR=/usr VDRDIR=/usr/include/vdr LIBDIR=. LOCALEDIR=debian/tmp/usr/share/locale
+endif
+
 
 configure: configure-stamp
 configure-stamp:
@@ -48,6 +53,9 @@ build-stamp: configure-stamp
 ifdef XINEPLUGINDIR
 	echo "xineplug_post_dfatmo.so $(XINEPLUGINDIR)/post/" > debian/libxine-dfatmo-plugin.install
 endif
+ifdef VDRPLUG_MAKE_FLAGS
+	$(MAKE) $(VDRPLUG_MAKE_FLAGS) install
+endif
 	touch $@
 
 clean: 
@@ -56,6 +64,9 @@ clean:
 	rm -f build-stamp configure-stamp
 	# Add here commands to clean up after the build process.
 	$(MAKE) clean
+ifdef VDRPLUG_MAKE_FLAGS
+	$(MAKE) $(VDRPLUG_MAKE_FLAGS) clean
+endif
 	dh_clean 
 	rm -f debian/libxine-dfatmo-plugin.install
 

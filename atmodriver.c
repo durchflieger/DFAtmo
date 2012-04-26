@@ -46,7 +46,7 @@ static PyObject *log_cb;
 #define CHECK_DRIVER_OPENED(AD) if (! AD->driver_opened) { PyErr_SetString(atmo_error_exception, "output driver closed"); return NULL; }
 
 
-static int act_log_level = LOG_ERROR;
+static int act_log_level = DFLOG_ERROR;
 dfatmo_log_level_t dfatmo_log_level = &act_log_level;
 
 static void driver_log(int level, const char *fmt, ...) {
@@ -121,7 +121,6 @@ static PyObject *analyze_image (py_atmo_driver_t *this, PyObject *args) {
   int crop_width, crop_height, analyze_width, analyze_height;
   int overscan;
   uint8_t *img;
-  int edge_weighting;
   Py_ssize_t colors_size;
 
   CHECK_CONFIGURED(this);
@@ -165,21 +164,8 @@ static PyObject *analyze_image (py_atmo_driver_t *this, PyObject *args) {
     return NULL;
   }
 
-    /* allocate hsv and weight images */
-  if (img_size > ad->alloc_img_size) {
-    free(ad->hsv_img);
-    free(ad->weight);
-    ad->alloc_img_size = 0;
-    ad->hsv_img = (hsv_color_t *) malloc(img_size * sizeof(hsv_color_t));
-    ad->weight = (uint8_t *) malloc(img_size * ad->sum_channels * sizeof(uint8_t));
-    if (ad->hsv_img == NULL || ad->weight == NULL)
-      return PyErr_NoMemory();
-    ad->alloc_img_size = img_size;
-    ad->analyze_width = 0;
-    ad->analyze_height = 0;
-    ad->edge_weighting = 0;
-  }
-  ad->img_size = img_size;
+  if (configure_analyze_size(ad, analyze_width, analyze_height))
+    return PyErr_NoMemory();
 
     /* convert to hsv image */
   img = (uint8_t *)PyByteArray_AsString(ba_img);
@@ -193,16 +179,6 @@ static PyObject *analyze_image (py_atmo_driver_t *this, PyObject *args) {
   }
 
   Py_BEGIN_ALLOW_THREADS
-
-    /* calculate weight image */
-  edge_weighting = ad->active_parm.edge_weighting;
-  if (analyze_width != ad->analyze_width || analyze_height != ad->analyze_height || edge_weighting != ad->edge_weighting) {
-    ad->edge_weighting = edge_weighting;
-    ad->analyze_width = analyze_width;
-    ad->analyze_height = analyze_height;
-    calc_weight(ad);
-    DFATMO_LOG(LOG_DEBUG, "image size: %dx%d, analyze window: %d,%d %dx%d", img_width, img_height, crop_width, crop_height, analyze_width, analyze_height);
-  }
 
   calc_hue_hist(ad);
   calc_windowed_hue_hist(ad);
@@ -239,7 +215,6 @@ static PyObject *filter_analyzed_colors (py_atmo_driver_t *this, PyObject *args)
   atmo_driver_t *ad = &this->ad;
   PyObject *ba_analyzed_colors;
   int colors_size;
-  rgb_color_t *analyzed_colors;
 
   CHECK_CONFIGURED(this);
 
@@ -252,20 +227,9 @@ static PyObject *filter_analyzed_colors (py_atmo_driver_t *this, PyObject *args)
     return NULL;
   }
 
-  analyzed_colors = (rgb_color_t *) PyByteArray_AsString(ba_analyzed_colors);
+  memcpy(ad->analyzed_colors, (rgb_color_t *)PyByteArray_AsString(ba_analyzed_colors), colors_size);
 
-    /* Transfer analyzed colors into filtered colors */
-  switch (ad->active_parm.filter) {
-  case FILTER_PERCENTAGE:
-    percent_filter(ad, analyzed_colors);
-    break;
-  case FILTER_COMBINED:
-    mean_filter(ad, analyzed_colors);
-    break;
-  default:
-      /* no filtering */
-    memcpy(ad->filtered_colors, analyzed_colors, colors_size);
-  }
+  apply_filters(ad);
 
   return PyByteArray_FromStringAndSize((const char *)ad->filtered_colors, colors_size);
 }
@@ -275,9 +239,6 @@ static PyObject *filter_output_colors (py_atmo_driver_t *this, PyObject *args) {
   atmo_driver_t *ad = &this->ad;
   PyObject *ba_output_colors;
   int colors_size;
-  rgb_color_t *output_colors;
-  int filter_delay;
-  int output_rate;
 
   CHECK_CONFIGURED(this);
 
@@ -290,40 +251,10 @@ static PyObject *filter_output_colors (py_atmo_driver_t *this, PyObject *args) {
     return NULL;
   }
 
-  output_colors = (rgb_color_t *) PyByteArray_AsString(ba_output_colors);
+  memcpy(ad->filtered_colors, (rgb_color_t *)PyByteArray_AsString(ba_output_colors), colors_size);
 
-    /* Initialize delay filter queue */
-  filter_delay = ad->active_parm.filter_delay;
-  output_rate = ad->active_parm.output_rate;
-  if (ad->filter_delay != filter_delay || ad->output_rate != output_rate) {
-    free(ad->delay_filter_queue);
-    ad->filter_delay = -1;
-    ad->delay_filter_queue_length = ((filter_delay >= output_rate) ? filter_delay / output_rate + 1: 0) * ad->sum_channels;
-    if (ad->delay_filter_queue_length) {
-      ad->delay_filter_queue = (rgb_color_t *) calloc(ad->delay_filter_queue_length, sizeof(rgb_color_t));
-      if (ad->delay_filter_queue == NULL)
-        return PyErr_NoMemory();
-    }
-    else
-      ad->delay_filter_queue = NULL;
-    ad->filter_delay = filter_delay;
-    ad->output_rate = output_rate;
-    ad->delay_filter_queue_pos = 0;
-  }
-
-    /* Transfer filtered colors to output colors */
-  if (ad->delay_filter_queue) {
-    int outp = ad->delay_filter_queue_pos + ad->sum_channels;
-    if (outp >= ad->delay_filter_queue_length)
-      outp = 0;
-
-    memcpy(&ad->delay_filter_queue[ad->delay_filter_queue_pos], output_colors, colors_size);
-    memcpy(ad->filtered_output_colors, &ad->delay_filter_queue[outp], colors_size);
-
-    ad->delay_filter_queue_pos = outp;
-  }
-  else
-    memcpy(ad->filtered_output_colors, output_colors, colors_size);
+  if (apply_delay_filter(ad))
+    return PyErr_NoMemory();
 
   Py_BEGIN_ALLOW_THREADS
   apply_gamma_correction(ad);
@@ -334,11 +265,10 @@ static PyObject *filter_output_colors (py_atmo_driver_t *this, PyObject *args) {
 }
 
 
-static PyObject *output_colors (py_atmo_driver_t *this, PyObject *args) {
+static PyObject *output_colors_wrapper (py_atmo_driver_t *this, PyObject *args) {
   atmo_driver_t *ad = &this->ad;
   PyObject *ba_output_colors;
   int colors_size;
-  rgb_color_t *output_colors;
 
   CHECK_CONFIGURED(this);
   CHECK_DRIVER_OPENED(ad);
@@ -352,18 +282,14 @@ static PyObject *output_colors (py_atmo_driver_t *this, PyObject *args) {
     return NULL;
   }
 
-  output_colors = (rgb_color_t *) PyByteArray_AsString(ba_output_colors);
+  memcpy(ad->output_colors, (rgb_color_t *)PyByteArray_AsString(ba_output_colors), colors_size);
 
-  if (memcmp(output_colors, ad->last_output_colors, colors_size)) {
-    memcpy(ad->output_colors, output_colors, colors_size);
-    Py_BEGIN_ALLOW_THREADS
-    if (ad->output_driver->output_colors(ad->output_driver, ad->output_colors, ad->last_output_colors)) {
-      Py_BLOCK_THREADS
-      return output_driver_error(ad);
-    }
-    memcpy(ad->last_output_colors, ad->output_colors, colors_size);
-    Py_END_ALLOW_THREADS
+  Py_BEGIN_ALLOW_THREADS
+  if (send_output_colors(ad, ad->output_colors, 0)) {
+    Py_BLOCK_THREADS
+    return output_driver_error(ad);
   }
+  Py_END_ALLOW_THREADS
 
   Py_INCREF(Py_None);
   return Py_None;
@@ -372,7 +298,7 @@ static PyObject *output_colors (py_atmo_driver_t *this, PyObject *args) {
 
 static PyObject *configure (py_atmo_driver_t *this, PyObject *args) {
   atmo_driver_t *ad = &this->ad;
-  int send = 0;
+  int send;
 
   this->configured = 0;
 
@@ -381,26 +307,17 @@ static PyObject *configure (py_atmo_driver_t *this, PyObject *args) {
         strcmp(ad->active_parm.driver_param, ad->parm.driver_param)) {
     if (close_output_driver(ad))
       return output_driver_error(ad);
-
-    if (strcmp(ad->active_parm.driver, ad->parm.driver))
-      unload_output_driver(ad);
+    unload_output_driver(ad);
   }
 
-    /* open output driver */
-  if (!ad->driver_opened) {
-    if (ad->output_driver == NULL) {
-      if (load_output_driver(ad)) {
-        PyErr_SetString(atmo_error_exception, "loading output driver fails");
-        return NULL;
-      }
-    }
+  if (ad->output_driver == NULL && load_output_driver(ad)) {
+    PyErr_SetString(atmo_error_exception, "loading output driver fails");
+    return NULL;
+  }
 
-    if (ad->output_driver->open(ad->output_driver, &ad->parm))
-      return output_driver_error(ad);
+  send = !ad->driver_opened;
 
-    ad->driver_opened = 1;
-    send = 1;
-  } else if (ad->output_driver->configure(ad->output_driver, &ad->parm))
+  if (open_output_driver(ad))
     return output_driver_error(ad);
 
   if (ad->active_parm.top != ad->parm.top ||
@@ -428,7 +345,7 @@ static PyObject *configure (py_atmo_driver_t *this, PyObject *args) {
     /* send first initial color packet */
   if (send) {
     Py_BEGIN_ALLOW_THREADS
-    if (ad->output_driver->output_colors(ad->output_driver, ad->last_output_colors, NULL)) {
+    if (send_output_colors(ad, ad->last_output_colors, 1)) {
       Py_BLOCK_THREADS
       return output_driver_error(ad);
     }
@@ -534,78 +451,21 @@ static PyObject *turn_lights_off_wrapper (py_atmo_driver_t *this, PyObject *args
     return 0; \
   }
 
-STRATTR(driver);
-STRATTR(driver_param);
-STRATTR(driver_path);
-INTATTR(top, 0, MAX_BORDER_CHANNELS);
-INTATTR(bottom, 0, MAX_BORDER_CHANNELS);
-INTATTR(left, 0, MAX_BORDER_CHANNELS);
-INTATTR(right, 0, MAX_BORDER_CHANNELS);
-INTATTR(center, 0, 1);
-INTATTR(top_left, 0, 1);
-INTATTR(top_right, 0, 1);
-INTATTR(bottom_left, 0, 1);
-INTATTR(bottom_right, 0, 1);
-INTATTR(overscan, 0, 200);
-INTATTR(darkness_limit, 0, 100);
-INTATTR(edge_weighting, 10, 200);
-INTATTR(hue_win_size, 0, 5);
-INTATTR(sat_win_size, 0, 5);
-INTATTR(hue_threshold, 0, 100);
-INTATTR(uniform_brightness, 0, 1);
-INTATTR(brightness, 50, 300);
-INTATTR(filter, 0, NUM_FILTERS);
-INTATTR(filter_smoothness, 1, 100);
-INTATTR(filter_length, 300, 5000);
-INTATTR(filter_threshold, 1, 100);
-INTATTR(filter_delay, 0, 1000);
-INTATTR(wc_red, 0, 255);
-INTATTR(wc_green, 0, 255);
-INTATTR(wc_blue, 0, 255);
-INTATTR(gamma, 0, 30);
-INTATTR(output_rate, 10, 1000);
-INTATTR(analyze_rate, 10, 500);
-INTATTR(analyze_size, 0, 3);
-INTATTR(start_delay, 0, 5000);
-INTATTR(enabled, 0, 1);
+#define PARM_DESC_BOOL( var, enumv, min, max, readonly, descr )        INTATTR( var, min, max );
+#define PARM_DESC_INT( var, enumv, min, max, readonly, descr )         INTATTR( var, min, max );
+#define PARM_DESC_CHAR( var, enumv, min, max, readonly, descr )        STRATTR( var );
 
-#define DEFGETSET(NAME, DESC) { #NAME , (getter)get_ ## NAME , (setter)set_ ## NAME , DESC , NULL }
+PARM_DESC_LIST
+
+#undef PARM_DESC_BOOL
+#undef PARM_DESC_INT
+#undef PARM_DESC_CHAR
+#define PARM_DESC_BOOL( var, enumv, min, max, readonly, descr ) { #var , (getter)get_ ## var , (setter)set_ ## var , descr , NULL },
+#define PARM_DESC_INT( var, enumv, min, max, readonly, descr ) { #var , (getter)get_ ## var , (setter)set_ ## var , descr , NULL },
+#define PARM_DESC_CHAR( var, enumv, min, max, readonly, descr ) { #var , (getter)get_ ## var , (setter)set_ ## var , descr , NULL },
 
 static PyGetSetDef atmo_driver_getseters[] = {
-  DEFGETSET(driver, "output driver"),
-  DEFGETSET(driver_param, "parameters for output driver"),
-  DEFGETSET(driver_path, "output driver search path"),
-  DEFGETSET(top, "number of areas at top border"),
-  DEFGETSET(bottom, "number of areas at bottom border"),
-  DEFGETSET(left, "number of areas at left border"),
-  DEFGETSET(right, "number of areas at right border"),
-  DEFGETSET(center, "activate center area"),
-  DEFGETSET(top_left, "activate top_left area"),
-  DEFGETSET(top_right, "activate top_right area"),
-  DEFGETSET(bottom_left, "activate bottom_left area"),
-  DEFGETSET(bottom_right, "activate bottom right area"),
-  DEFGETSET(overscan, "ignored overscan border of grabbed image [%1000]"),
-  DEFGETSET(darkness_limit, "limit for black pixel"),
-  DEFGETSET(edge_weighting, "power of edge weighting"),
-  DEFGETSET(hue_win_size, "hue windowing size"),
-  DEFGETSET(sat_win_size, "saturation windowing size"),
-  DEFGETSET(hue_threshold, "hue threshold [%]"),
-  DEFGETSET(uniform_brightness, "calculate uniform brightness"),
-  DEFGETSET(brightness, "brightness [%]"),
-  DEFGETSET(filter, "filter mode"),
-  DEFGETSET(filter_smoothness, "filter smoothness [%]"),
-  DEFGETSET(filter_length, "filter length [ms]"),
-  DEFGETSET(filter_threshold, "filter threshold [%]"),
-  DEFGETSET(filter_delay, "delay for output send to controller [ms]"),
-  DEFGETSET(wc_red, "white calibration correction factor of red color channel"),
-  DEFGETSET(wc_green, "white calibration correction factor of green color channel"),
-  DEFGETSET(wc_blue, "white calibration correction factor of blue color channel"),
-  DEFGETSET(gamma, "gamma correction factor"),
-  DEFGETSET(output_rate, "color output rate [ms]"),
-  DEFGETSET(analyze_rate, "analyze rate [ms]"),
-  DEFGETSET(analyze_size, "size of analyze image"),
-  DEFGETSET(start_delay, "delay after stream start before first output is send [ms]"),
-  DEFGETSET(enabled, "enable addon"),
+PARM_DESC_LIST
   { NULL }
 };
 
@@ -675,9 +535,7 @@ static void atmo_driver_dealloc(py_atmo_driver_t *this)
   close_output_driver(ad);
   unload_output_driver(ad);
   free_channels(ad);
-  free(ad->hsv_img);
-  free(ad->weight);
-  free(ad->delay_filter_queue);
+  free_analyze_images(ad);
 
   this->ob_type->tp_free((PyObject*)this);
 }
@@ -688,7 +546,7 @@ static PyMethodDef atmo_driver_methods[] = {
   {"resetFilters", (PyCFunction)reset_filters_wrapper, METH_VARARGS, "resetFilters() -- Reset all filters."},
   {"filterAnalyzedColors", (PyCFunction)filter_analyzed_colors, METH_VARARGS, "filterAnalyzedColors(analyzedColors) -- Apply percent/mean filters."},
   {"filterOutputColors", (PyCFunction)filter_output_colors, METH_VARARGS, "filterOutputColors(outputColors) -- Apply delay/white/gamma filters."},
-  {"outputColors", (PyCFunction)output_colors, METH_VARARGS, "outputColors(outputColors) -- Output colors to controller devices."},
+  {"outputColors", (PyCFunction)output_colors_wrapper, METH_VARARGS, "outputColors(outputColors) -- Output colors to controller devices."},
   {"configure", (PyCFunction)configure, METH_VARARGS, "configure() -- Configure driver with applied attributes." },
   {"instantConfigure", (PyCFunction)instant_configure_wrapper, METH_VARARGS, "instantConfigure() -- Configure only the instant attributes of driver"},
   {"turnLightsOff", (PyCFunction)turn_lights_off_wrapper, METH_VARARGS, "turnLightsOff() -- output all black color packet."},
@@ -775,8 +633,8 @@ PyMODINIT_FUNC initatmodriver(void)
   PyModule_AddIntConstant(m, "FILTER_PERCENTAGE", FILTER_PERCENTAGE);
   PyModule_AddIntConstant(m, "FILTER_COMBINED", FILTER_COMBINED);
 
-  PyModule_AddIntConstant(m, "LOG_DEBUG", LOG_DEBUG);
-  PyModule_AddIntConstant(m, "LOG_INFO", LOG_INFO);
-  PyModule_AddIntConstant(m, "LOG_ERROR", LOG_ERROR);
-  PyModule_AddIntConstant(m, "LOG_NONE", LOG_NONE);
+  PyModule_AddIntConstant(m, "LOG_DEBUG", DFLOG_DEBUG);
+  PyModule_AddIntConstant(m, "LOG_INFO", DFLOG_INFO);
+  PyModule_AddIntConstant(m, "LOG_ERROR", DFLOG_ERROR);
+  PyModule_AddIntConstant(m, "LOG_NONE", DFLOG_NONE);
 }
