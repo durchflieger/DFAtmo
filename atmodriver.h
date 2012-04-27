@@ -84,7 +84,7 @@ typedef const char* lib_error_t;
 enum { FILTER_NONE = 0, FILTER_PERCENTAGE, FILTER_COMBINED, NUM_FILTERS };
 
 typedef struct { uint8_t h, s, v; } hsv_color_t;
-typedef struct { uint64_t r, g, b; } rgb_color_sum_t;
+typedef struct { int r, g, b; } rgb_color_sum_t;
 
 typedef struct {
     /* configuration related */
@@ -581,12 +581,17 @@ static void percent_filter(atmo_driver_t *self, rgb_color_t *act) {
   const int new_p = 100 - old_p;
   int n = self->sum_channels;
 
-  while (n--) {
-    out->r = (act->r * new_p + out->r * old_p) / 100;
-    out->g = (act->g * new_p + out->g * old_p) / 100;
-    out->b = (act->b * new_p + out->b * old_p) / 100;
-    ++act;
-    ++out;
+  if (self->old_mean_length) {
+    while (n--) {
+      out->r = (act->r * new_p + out->r * old_p) / 100;
+      out->g = (act->g * new_p + out->g * old_p) / 100;
+      out->b = (act->b * new_p + out->b * old_p) / 100;
+      ++act;
+      ++out;
+    }
+  } else {
+    self->old_mean_length = -1;
+    memcpy(out, act, n * sizeof(rgb_color_t));
   }
 }
 
@@ -595,35 +600,51 @@ static void mean_filter(atmo_driver_t *self, rgb_color_t *act) {
   rgb_color_t *out = self->filtered_colors;
   rgb_color_t *mean_values = self->mean_filter_values;
   rgb_color_sum_t *mean_sums = self->mean_filter_sum_values;
-  const int64_t mean_threshold = (int64_t) ((double) self->active_parm.filter_threshold * 3.6);
+  const double mean_threshold = self->active_parm.filter_threshold * 4.4167;
   const int old_p = self->active_parm.filter_smoothness;
   const int new_p = 100 - old_p;
-  int n = self->sum_channels;
   const int filter_length = self->active_parm.filter_length;
-  const int64_t mean_length = (filter_length < self->active_parm.output_rate) ? 1: filter_length / self->active_parm.output_rate;
-  const int reinitialize = ((int)mean_length != self->old_mean_length);
-  int64_t dist;
-  self->old_mean_length = (int)mean_length;
+  const int output_rate = self->active_parm.output_rate;
+  const int mean_length = (output_rate <= 0 || filter_length <= output_rate) ? 1: filter_length / output_rate;
+  const int max_sum = mean_length * 255;
+  const int reinitialize = (mean_length != self->old_mean_length);
+  int n = self->sum_channels;
+  int dr, dg, db;
+  double dist;
+
+  self->old_mean_length = mean_length;
 
   while (n--) {
     mean_sums->r += (act->r - mean_values->r);
-    mean_values->r = (uint8_t) (mean_sums->r / mean_length);
+    if (mean_sums->r < 0)
+      mean_sums->r = 0;
+    else if (mean_sums->r > max_sum)
+      mean_sums->r = max_sum;
+    mean_values->r = mean_sums->r / mean_length;
 
     mean_sums->g += (act->g - mean_values->g);
-    mean_values->g = (uint8_t) (mean_sums->g / mean_length);
+    if (mean_sums->g < 0)
+      mean_sums->g = 0;
+    else if (mean_sums->g > max_sum)
+      mean_sums->g = max_sum;
+    mean_values->g = mean_sums->g / mean_length;
 
     mean_sums->b += (act->b - mean_values->b);
-    mean_values->b = (uint8_t) (mean_sums->b / mean_length);
+    if (mean_sums->b < 0)
+      mean_sums->b = 0;
+    else if (mean_sums->b > max_sum)
+      mean_sums->b = max_sum;
+    mean_values->b = mean_sums->b / mean_length;
 
       /*
        * check, if there is a jump -> check if differences between actual values and filter values are too big
        */
-    dist = (int64_t)(mean_values->r - act->r) * (int64_t)(mean_values->r - act->r) +
-                    (int64_t)(mean_values->g - act->g) * (int64_t)(mean_values->g - act->g) +
-                    (int64_t)(mean_values->b - act->b) * (int64_t)(mean_values->b - act->b);
-
-    if (dist > 0)
-      dist = (int64_t) sqrt((double) dist);
+    dr = (act->r - mean_values->r);
+    dg = (act->g - mean_values->g);
+    db = (act->b - mean_values->b);
+    dist = (dr * dr + dg * dg + db * db);
+    if (dist > 0.0)
+      dist = sqrt(dist);
 
       /* compare calculated distance with the filter threshold */
     if (dist > mean_threshold || reinitialize) {
@@ -636,7 +657,7 @@ static void mean_filter(atmo_driver_t *self, rgb_color_t *act) {
     }
     else
     {
-        /* apply an additional percent filter */
+        /* apply additional percent filter */
       out->r = (mean_values->r * new_p + out->r * old_p) / 100;
       out->g = (mean_values->g * new_p + out->g * old_p) / 100;
       out->b = (mean_values->b * new_p + out->b * old_p) / 100;
@@ -670,37 +691,31 @@ static void apply_white_calibration(atmo_driver_t *self) {
   const int wc_red = self->active_parm.wc_red;
   const int wc_green = self->active_parm.wc_green;
   const int wc_blue = self->active_parm.wc_blue;
-  rgb_color_t *out;
-  int n;
 
-  if (wc_red == 255 && wc_green == 255 && wc_blue == 255)
-    return;
-
-  out = self->filtered_output_colors;
-  n = self->sum_channels;
-  while (n--) {
-    out->r = (uint8_t)((int)out->r * wc_red / 255);
-    out->g = (uint8_t)((int)out->g * wc_green / 255);
-    out->b = (uint8_t)((int)out->b * wc_blue / 255);
-    ++out;
+  if (wc_red < 255 || wc_green < 255 || wc_blue < 255) {
+    rgb_color_t *out = self->filtered_output_colors;
+    int n = self->sum_channels;
+    while (n--) {
+      out->r = (out->r * wc_red) / 255;
+      out->g = (out->g * wc_green) / 255;
+      out->b = (out->b * wc_blue) / 255;
+      ++out;
+    }
   }
 }
 
 
 static void apply_gamma_correction(atmo_driver_t *self) {
   const int igamma = self->active_parm.gamma;
-
-  if (igamma <= 10)
-    return;
-
+  if (igamma > 10)
   {
-    const double gamma = (double)igamma / 10.0;
+    const double gamma = igamma / 10.0;
     rgb_color_t *out = self->filtered_output_colors;
     int n = self->sum_channels;
     while (n--) {
-      out->r = (uint8_t)(pow((double)out->r / 255.0, gamma) * 255.0);
-      out->g = (uint8_t)(pow((double)out->g / 255.0, gamma) * 255.0);
-      out->b = (uint8_t)(pow((double)out->b / 255.0, gamma) * 255.0);
+      out->r = pow((out->r / 255.0), gamma) * 255.0;
+      out->g = pow((out->g / 255.0), gamma) * 255.0;
+      out->b = pow((out->b / 255.0), gamma) * 255.0;
       ++out;
     }
   }
@@ -1082,8 +1097,8 @@ static void init_configuration (atmo_driver_t *self)
 #define trNOOP(x) x
 #endif
 
-static char const *filter_enum[NUM_FILTERS] = { trNOOP("off"), trNOOP("percentage"), trNOOP("combined") };
-static char const *analyze_size_enum[4] = { "64", "128", "192", "256" };
+static const char *filter_enum[NUM_FILTERS] = { trNOOP("off"), trNOOP("percentage"), trNOOP("combined") };
+static const char *analyze_size_enum[4] = { "64", "128", "192", "256" };
 
 #define PARM_DESC_LIST \
 PARM_DESC_BOOL(enabled, NULL, 0, 1, 0, trNOOP("Launch on startup")) \
