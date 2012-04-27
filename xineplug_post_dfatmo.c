@@ -41,6 +41,8 @@
 
 #include "atmodriver.h"
 
+#define PLUGIN_DESC_TEXT        "DFAtmo V0.2.0 - Analyze video picture and generate output data for atmolight controllers"
+
 #define GRAB_TIMEOUT            100     /* max. time waiting for next grab image [ms] */
 #define THREAD_RESPONSE_TIMEOUT 500000  /* timeout for thread state change [us] */
 
@@ -802,7 +804,7 @@ static void configure(atmo_post_plugin_t *this) {
     ad->active_parm = ad->parm;
 
       /* send first initial color packet */
-    if (start && send && send_output_colors(ad, ad->output_colors, 1))
+    if (start && send && turn_lights_off(ad))
       start = 0;
 
     if (start)
@@ -908,10 +910,7 @@ static int atmo_get_parameters(xine_post_t *this_gen, void *parm_gen)
 
 
 static char *atmo_get_help(void) {
-  return _("DFAtmo post plugin\n"
-           "Analyze video picture and generate output data for atmolight controllers\n"
-           "\n"
-         );
+  return (PLUGIN_DESC_TEXT "\n\n");
 }
 
 
@@ -1019,23 +1018,6 @@ static post_plugin_t *atmo_open_plugin(post_class_t *class_gen,
  *    Plugin class
  */
 
-#if POST_PLUGIN_IFACE_VERSION < 10
-static char *atmo_get_identifier(post_class_t *class_gen)
-{
-  return "dfatmo";
-}
-
-static char *atmo_get_description(post_class_t *class_gen)
-{
-  return "Analyze video picture and generate output data for atmolight controllers";
-}
-
-static void atmo_class_dispose(post_class_t *class_gen)
-{
-  free(class_gen);
-}
-#endif
-
 static void *atmo_init_plugin(xine_t *xine, void *data)
 {
   xine_instance = xine;
@@ -1056,15 +1038,10 @@ static void *atmo_init_plugin(xine_t *xine, void *data)
 
   class->xine = xine;
   class->post_class.open_plugin     = atmo_open_plugin;
-#if POST_PLUGIN_IFACE_VERSION < 10
-  class->post_class.get_identifier  = atmo_get_identifier;
-  class->post_class.get_description = atmo_get_description;
-  class->post_class.dispose         = atmo_class_dispose;
-#else
   class->post_class.identifier      = "dfatmo";
-  class->post_class.description     = N_("Analyze video picture and generate output data for atmolight controllers");
+  class->post_class.description     = PLUGIN_DESC_TEXT;
   class->post_class.dispose         = default_post_class_dispose;
-#endif
+
   return &class->post_class;
 }
 

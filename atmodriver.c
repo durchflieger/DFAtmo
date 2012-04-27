@@ -345,7 +345,7 @@ static PyObject *configure (py_atmo_driver_t *this, PyObject *args) {
     /* send first initial color packet */
   if (send) {
     Py_BEGIN_ALLOW_THREADS
-    if (send_output_colors(ad, ad->last_output_colors, 1)) {
+    if (turn_lights_off(ad)) {
       Py_BLOCK_THREADS
       return output_driver_error(ad);
     }
