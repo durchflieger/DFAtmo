@@ -26,6 +26,8 @@
 #include <getopt.h>
 #include <vdr/plugin.h>
 
+#include "softhddevice_service.h"
+
 
 extern "C" {
 #include "atmodriver.h"
@@ -108,7 +110,7 @@ static int GetOutputDriverType(const char *Name)
 } // extern "C"
 
 
-static const char *VERSION        = "0.0.1";
+static const char *VERSION        = "0.2.0";
 static const char *DESCRIPTION    = trNOOP("The driver for 'Atmolight' controllers");
 static const char *MAINMENUENTRY  = "DFAtmo";
 
@@ -207,6 +209,10 @@ void cDFAtmoGrabThread::Action(void)
 
   DFATMO_LOG(DFLOG_INFO, "grab thread running");
 
+  cPlugin *softHdPlugin = cPluginManager::GetPlugin("softhddevice");
+  int softHDGrabService = (softHdPlugin != NULL && softHdPlugin->Service(ATMO_GRAB_SERVICE, NULL));
+  DFATMO_LOG(DFLOG_INFO, "detected SoftHDDevice atmo grab service");
+
   while (Running())
   {
       // loop with analyze rate duration
@@ -218,88 +224,139 @@ void cDFAtmoGrabThread::Action(void)
     }
     grabTime = actTime + ad->active_parm.analyze_rate;
 
-      // get actual displayed image size
-    int vidWidth = 0, vidHeight = 0;
-    double vidAspect = 0.0;
-    cDevice::PrimaryDevice()->GetVideoSize(vidWidth, vidHeight, vidAspect);
-    if (vidWidth < 8 || vidHeight < 8)
+    if (softHDGrabService)
     {
-      DFATMO_LOG(DFLOG_DEBUG, "illegal video size %dx%d!", vidWidth, vidHeight);
-      continue;
-    }
-
-      // calculate size of analyze image
-    int grabWidth = (ad->active_parm.analyze_size + 1) * 64;
-    int grabHeight = (grabWidth * vidHeight) / vidWidth;
-
-      // grab image
-    int grabSize = 0;
-    uint8_t *grabImg = cDevice::PrimaryDevice()->GrabImage(grabSize, false, 100, grabWidth, grabHeight);
-    if (grabImg == NULL)
-    {
-      DFATMO_LOG(DFLOG_DEBUG, "grab failed!");
-      continue;
-    }
-
-      // Skip PNM header of grabbed image
-    uint8_t *img = grabImg;
-    int lf = 0;
-    while (grabSize > 0 && lf < 4)
-    {
-      if (*img == '\n')
-        ++lf;
-      ++img;
-      --grabSize;
-    }
-
-    if (grabSize != (grabWidth * grabHeight * 3))
-    {
-      DFATMO_LOG(DFLOG_ERROR, "grab function returned wrong image size (%d,%d)!", grabSize, (grabWidth * grabHeight * 3));
-      free(grabImg);
-      break;
-    }
-
-      /* calculate size of analyze (sub) window */
-    int overscan = ad->active_parm.overscan;
-    int analyzeWidth, analyzeHeight;
-    if (overscan) {
-      int cropWidth = (grabWidth * overscan + 500) / 1000;
-      int cropHeight = (grabHeight * overscan + 500) / 1000;
-      analyzeWidth = grabWidth - 2 * cropWidth;
-      analyzeHeight = grabHeight - 2 * cropHeight;
-      img += (cropHeight * grabWidth + cropWidth) * 3;
-    } else {
-      analyzeWidth = grabWidth;
-      analyzeHeight = grabHeight;
-    }
-
-    if (analyzeWidth < 8 || analyzeHeight < 8 || analyzeWidth > grabWidth || analyzeHeight > grabHeight) {
-      DFATMO_LOG(DFLOG_ERROR, "illegal analyze window size %dx%d of %dx%d", analyzeWidth, analyzeHeight, grabWidth, grabHeight);
-      free(grabImg);
-      break;
-    }
-
-    if (configure_analyze_size(ad, analyzeWidth, analyzeHeight))
-    {
-      free(grabImg);
-      break;
-    }
-
-      // calculate HSV image
-    hsv_color_t *hsv = ad->hsv_img;
-    int pitch = grabWidth * 3;
-    while (analyzeHeight--)
-    {
-      uint8_t *i = img;
-      int w = analyzeWidth;
-      while (w--) {
-        rgb_to_hsv(hsv, i[0], i[1], i[2]);
-        ++hsv;
-        i += 3;
+        // grab image using sofhddevice atmo grab service
+      SoftHDDevice_AtmoGrabService_v1_0_t req;
+      req.structSize = sizeof(SoftHDDevice_AtmoGrabService_v1_0_t);
+      req.analyseSize = (ad->active_parm.analyze_size + 1) * 64;
+      req.clippedOverscan = ad->active_parm.overscan;
+      req.img = NULL;
+      if (!softHdPlugin->Service(ATMO_GRAB_SERVICE, &req) || req.img == NULL)
+      {
+        DFATMO_LOG(DFLOG_DEBUG, "grab failed!");
+        continue;
       }
-      img += pitch;
+
+      if (req.imgType != GRAB_IMG_RGBA_FORMAT_B8G8R8A8)
+      {
+        DFATMO_LOG(DFLOG_ERROR, "SoftHDDevice service returned unsupported image format! Fall back to VDR standard grab feature");
+        softHDGrabService = 0;
+        free(req.img);
+        continue;
+      }
+
+      int size = req.width * req.height;
+      if (req.imgSize != (size * (int)sizeof(uint32_t)))
+      {
+        DFATMO_LOG(DFLOG_ERROR, "SoftHDDevice service returned wrong image size!");
+        free(req.img);
+        break;
+      }
+
+      if (configure_analyze_size(ad, req.width, req.height))
+      {
+        free(req.img);
+        break;
+      }
+
+        // calculate HSV image
+      hsv_color_t *hsv = ad->hsv_img;
+      uint32_t *img = (uint32_t *) req.img;
+      while (size--)
+      {
+        uint32_t color = *img++;
+        rgb_to_hsv(hsv++, ((color >> 16) & 0x0FF), ((color >> 8) & 0x0FF), (color & 0x0FF));
+      }
+
+      free(req.img);
     }
-    free(grabImg);
+    else
+    {
+        // get actual displayed image size
+      int vidWidth = 0, vidHeight = 0;
+      double vidAspect = 0.0;
+      cDevice::PrimaryDevice()->GetVideoSize(vidWidth, vidHeight, vidAspect);
+      if (vidWidth < 8 || vidHeight < 8)
+      {
+        DFATMO_LOG(DFLOG_DEBUG, "illegal video size %dx%d!", vidWidth, vidHeight);
+        continue;
+      }
+
+        // calculate size of analyze image
+      int grabWidth = (ad->active_parm.analyze_size + 1) * 64;
+      int grabHeight = (grabWidth * vidHeight) / vidWidth;
+
+        // grab image
+      int grabSize = 0;
+      uint8_t *grabImg = cDevice::PrimaryDevice()->GrabImage(grabSize, false, 100, grabWidth, grabHeight);
+      if (grabImg == NULL)
+      {
+        DFATMO_LOG(DFLOG_DEBUG, "grab failed!");
+        continue;
+      }
+
+        // Skip PNM header of grabbed image
+      uint8_t *img = grabImg;
+      int lf = 0;
+      while (grabSize > 0 && lf < 4)
+      {
+        if (*img == '\n')
+          ++lf;
+        ++img;
+        --grabSize;
+      }
+
+      if (grabSize != (grabWidth * grabHeight * 3))
+      {
+        DFATMO_LOG(DFLOG_ERROR, "grab function returned wrong image size (%d,%d)!", grabSize, (grabWidth * grabHeight * 3));
+        free(grabImg);
+        break;
+      }
+
+        /* calculate size of analyze (sub) window */
+      int overscan = ad->active_parm.overscan;
+      int analyzeWidth, analyzeHeight;
+      if (overscan) {
+        int cropWidth = (grabWidth * overscan + 500) / 1000;
+        int cropHeight = (grabHeight * overscan + 500) / 1000;
+        analyzeWidth = grabWidth - 2 * cropWidth;
+        analyzeHeight = grabHeight - 2 * cropHeight;
+        img += (cropHeight * grabWidth + cropWidth) * 3;
+      } else {
+        analyzeWidth = grabWidth;
+        analyzeHeight = grabHeight;
+      }
+
+      if (analyzeWidth < 8 || analyzeHeight < 8 || analyzeWidth > grabWidth || analyzeHeight > grabHeight) {
+        DFATMO_LOG(DFLOG_ERROR, "illegal analyze window size %dx%d of %dx%d", analyzeWidth, analyzeHeight, grabWidth, grabHeight);
+        free(grabImg);
+        break;
+      }
+
+      if (configure_analyze_size(ad, analyzeWidth, analyzeHeight))
+      {
+        free(grabImg);
+        break;
+      }
+
+        // calculate HSV image
+      hsv_color_t *hsv = ad->hsv_img;
+      int pitch = grabWidth * 3;
+      while (analyzeHeight--)
+      {
+        uint8_t *i = img;
+        int w = analyzeWidth;
+        while (w--) {
+          rgb_to_hsv(hsv, i[0], i[1], i[2]);
+          ++hsv;
+          i += 3;
+        }
+        img += pitch;
+      }
+
+      free(grabImg);
+    }
 
     calc_hue_hist(ad);
     calc_windowed_hue_hist(ad);
@@ -897,7 +954,7 @@ void cDFAtmoPlugin::Configure(void)
     ad.active_parm = ad.parm;
 
       // send first initial color packet
-    if (start && send && send_output_colors(&ad, ad.output_colors, 1))
+    if (start && send && turn_lights_off(&ad))
       start = 0;
 
     if (!start || !grabThread.Start() || !outputThread.Start())
