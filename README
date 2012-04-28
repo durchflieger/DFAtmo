@@ -231,6 +231,7 @@ With the plugin control menu you can temporarily switch on/off or change the
 brightness of the Atmolight. These settings are not stored in setup.
 Alternatively you can control these settings with the following hot keys:
 
+@dfatmo ok     -> toggle Atmolight on/off
 @dfatmo red    -> switch Atmolight off
 @dfatmo green  -> switch Atmolight on
 @dfatmo yellow -> increase brightness by 10
