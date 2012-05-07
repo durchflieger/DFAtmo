@@ -1,5 +1,16 @@
 --- Version 0.2
-Added support for VDR with new DFAtmo VDR plugin
+
+Added support for VDR with new DFAtmo VDR plugin.
+Added parameter for configuration of output rate.
+Ensure first packet send to controller turn lights off.
+Correction to mean filter to prevent flickering.
+Added some more description for the filter parameters.
+Increase maximum size of a data package in serial output driver to 512 bytes.
+Increase maximum size of driver parameter to 2048 bytes.
+Added more speed values to linux version of serial output driver.
+Added ampersand as a additional driver parameter option separator to satisfy xinelib plugin parameter parsing.
+Added support for amblone and karatelight controller.
+Open Addon settings dialog if no settings file exists.
 
 --- Version 0.1
 
