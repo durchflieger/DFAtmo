@@ -713,9 +713,9 @@ static void apply_gamma_correction(atmo_driver_t *self) {
     rgb_color_t *out = self->filtered_output_colors;
     int n = self->sum_channels;
     while (n--) {
-      out->r = pow((out->r / 255.0), gamma) * 255.0;
-      out->g = pow((out->g / 255.0), gamma) * 255.0;
-      out->b = pow((out->b / 255.0), gamma) * 255.0;
+      out->r = (uint8_t)(pow((out->r / 255.0), gamma) * 255.0);
+      out->g = (uint8_t)(pow((out->g / 255.0), gamma) * 255.0);
+      out->b = (uint8_t)(pow((out->b / 255.0), gamma) * 255.0);
       ++out;
     }
   }
