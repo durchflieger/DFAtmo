@@ -402,7 +402,12 @@ output_rate *      20               Rate at which color information is send to t
                                     Valid values: 10 ... 500
 
 start_delay *      250              Delay after stream start before first output is send [ms].
-                                    Currently not suported by XBMC addon.
+                                    The VDR plugin used this parameter also for polling the video device when in suspend mode.
+                                    When the video device does not return a valid image on a grab request the DFAtmo plugin
+                                    assume that the video output is suspended and enters suspend mode.
+                                    While in suspend mode the DFAtmo grab and output thread rate is set to the start delay
+                                    time to lower CPU usage.
+                                    Currently this parameter is not suported by XBMC addon.
                                     Valid values 0 ... 5000.
                                     
 

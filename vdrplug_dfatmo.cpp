@@ -110,7 +110,7 @@ static int GetOutputDriverType(const char *Name)
 } // extern "C"
 
 
-static const char *VERSION        = "0.2.0";
+static const char *VERSION        = "0.2.1";
 static const char *DESCRIPTION    = trNOOP("The driver for 'Atmolight' controllers");
 static const char *MAINMENUENTRY  = "DFAtmo";
 
@@ -124,14 +124,18 @@ protected:
 public:
   cDFAtmoThread(const char *Desc, cDFAtmoPlugin *Plugin): cThread(Desc) { plugin = Plugin; };
   void Stop();
+  void Signal() { condWait.Signal(); }
 };
 
 
 class cDFAtmoGrabThread : public cDFAtmoThread {
+private:
+  bool suspended;
 protected:
   virtual void Action(void);
 public:
-  cDFAtmoGrabThread(cDFAtmoPlugin *Plugin): cDFAtmoThread("DFAtmo grab", Plugin) {};
+  bool Suspended() { return suspended; };
+  cDFAtmoGrabThread(cDFAtmoPlugin *Plugin): cDFAtmoThread("DFAtmo grab", Plugin) { suspended = false; };
 };
 
 
@@ -150,7 +154,6 @@ class cDFAtmoPlugin : public cPlugin {
   friend class cDFAtmoMainMenu;
 
 private:
-  cDFAtmoOutputThread outputThread;
   void Configure(void);
   void StopThreads(void);
 
@@ -159,6 +162,7 @@ protected:
   atmo_parameters_t SetupParm;
   int SetupDriverType;
   int SetupHideMainMenuEntry;
+  cDFAtmoOutputThread outputThread;
   cDFAtmoGrabThread grabThread;
   void StoreSetup(void);
   void InstantConfigure(void);
@@ -191,7 +195,7 @@ void cDFAtmoThread::Stop(void)
   if (Active())
   {
     Cancel(-1);
-    condWait.Signal();
+    Signal();
     Cancel(1);
   }
 }
@@ -206,7 +210,9 @@ void cDFAtmoGrabThread::Action(void)
   uint64_t startTime = cTimeMs::Now();
   uint64_t grabTime = startTime;
   uint64_t n = 1;
+  bool suspendChange = false;
 
+  suspended = false;
   DFATMO_LOG(DFLOG_INFO, "grab thread running");
 
   cPlugin *softHdPlugin = cPluginManager::GetPlugin("softhddevice");
@@ -215,6 +221,21 @@ void cDFAtmoGrabThread::Action(void)
 
   while (Running())
   {
+    if (suspendChange)
+    {
+      if (suspended)
+      {
+        DFATMO_LOG(DFLOG_INFO, "grab thread leaved suspend mode");
+        startTime = cTimeMs::Now();
+        n = 1;
+      }
+      else
+        DFATMO_LOG(DFLOG_INFO, "grab thread entered suspend mode. average loop time is %d ms", (int)((cTimeMs::Now() - startTime) / n));
+      suspended = !suspended;
+      plugin->outputThread.Signal();
+      suspendChange = false;
+    }
+
       // loop with analyze rate duration
     uint64_t actTime = cTimeMs::Now();
     if (actTime < grabTime)
@@ -222,7 +243,7 @@ void cDFAtmoGrabThread::Action(void)
       condWait.Wait((int)(grabTime - actTime));
       continue;
     }
-    grabTime = actTime + ad->active_parm.analyze_rate;
+    grabTime = actTime + ((suspended && ad->active_parm.start_delay > ad->active_parm.analyze_rate) ? ad->active_parm.start_delay: ad->active_parm.analyze_rate);
 
     if (softHDGrabService)
     {
@@ -235,8 +256,10 @@ void cDFAtmoGrabThread::Action(void)
       if (!softHdPlugin->Service(ATMO_GRAB_SERVICE, &req) || req.img == NULL)
       {
         DFATMO_LOG(DFLOG_DEBUG, "grab failed!");
+        suspendChange = !suspended;
         continue;
       }
+      suspendChange = suspended;
 
       if (req.imgType != GRAB_IMG_RGBA_FORMAT_B8G8R8A8)
       {
@@ -280,6 +303,7 @@ void cDFAtmoGrabThread::Action(void)
       if (vidWidth < 8 || vidHeight < 8)
       {
         DFATMO_LOG(DFLOG_DEBUG, "illegal video size %dx%d!", vidWidth, vidHeight);
+        suspendChange = !suspended;
         continue;
       }
 
@@ -293,8 +317,10 @@ void cDFAtmoGrabThread::Action(void)
       if (grabImg == NULL)
       {
         DFATMO_LOG(DFLOG_DEBUG, "grab failed!");
+        suspendChange = !suspended;
         continue;
       }
+      suspendChange = suspended;
 
         // Skip PNM header of grabbed image
       uint8_t *img = grabImg;
@@ -377,7 +403,10 @@ void cDFAtmoGrabThread::Action(void)
     ++n;
   }
 
-  DFATMO_LOG(DFLOG_INFO, "grab thread terminated. average loop time is %d ms", (int)((cTimeMs::Now() - startTime) / n));
+  if (suspended)
+    DFATMO_LOG(DFLOG_INFO, "grab thread terminated.");
+  else
+    DFATMO_LOG(DFLOG_INFO, "grab thread terminated. average loop time is %d ms", (int)((cTimeMs::Now() - startTime) / n));
 }
 
 
@@ -391,6 +420,7 @@ void cDFAtmoOutputThread::Action(void)
   uint64_t startTime = cTimeMs::Now();
   uint64_t outputTime = startTime;
   uint64_t n = 1;
+  bool suspended = false;
 
   DFATMO_LOG(DFLOG_INFO, "output thread running");
 
@@ -398,6 +428,22 @@ void cDFAtmoOutputThread::Action(void)
 
   while (Running())
   {
+    if (suspended != plugin->grabThread.Suspended())
+    {
+      if (suspended)
+      {
+        DFATMO_LOG(DFLOG_INFO, "output thread leaved suspend mode");
+        startTime = cTimeMs::Now();
+        outputTime = startTime;
+        n = 1;
+        reset_filters(ad);
+      }
+      else
+        DFATMO_LOG(DFLOG_INFO, "output thread entered suspend mode. average loop time is %d ms", (int)((cTimeMs::Now() - startTime) / n));
+
+      suspended = !suspended;
+    }
+
       // loop with analyze rate duration
     uint64_t actTime = cTimeMs::Now();
     if (actTime < outputTime)
@@ -405,27 +451,38 @@ void cDFAtmoOutputThread::Action(void)
       condWait.Wait((int)(outputTime - actTime));
       continue;
     }
-    outputTime = actTime + ad->active_parm.output_rate;
+    outputTime = actTime + ((suspended && ad->active_parm.start_delay > ad->active_parm.output_rate) ? ad->active_parm.start_delay: ad->active_parm.output_rate);
 
+    if (suspended)
     {
-      cThreadLock lock(&plugin->grabThread);
-      apply_filters(ad);
+      if (turn_lights_off(ad))
+        break;
     }
-
-    if (actTime >= (startTime + ad->active_parm.start_delay))
+    else
     {
-      if (apply_delay_filter(ad))
-        break;
-      apply_gamma_correction(ad);
-      apply_white_calibration(ad);
-      if (send_output_colors(ad, ad->filtered_output_colors, 0))
-        break;
+      {
+        cThreadLock lock(&plugin->grabThread);
+        apply_filters(ad);
+      }
+
+      if (actTime >= (startTime + ad->active_parm.start_delay))
+      {
+        if (apply_delay_filter(ad))
+          break;
+        apply_gamma_correction(ad);
+        apply_white_calibration(ad);
+        if (send_output_colors(ad, ad->filtered_output_colors, 0))
+          break;
+      }
     }
 
     ++n;
   }
 
-  DFATMO_LOG(DFLOG_INFO, "output thread terminated. average loop time is %d ms", (int)((cTimeMs::Now() - startTime) / n));
+  if (suspended)
+    DFATMO_LOG(DFLOG_INFO, "output thread terminated.");
+  else
+    DFATMO_LOG(DFLOG_INFO, "output thread terminated. average loop time is %d ms", (int)((cTimeMs::Now() - startTime) / n));
 }
 
 
@@ -606,8 +663,8 @@ void cDFAtmoSetupMenu::Store(void)
   if (memcmp(&plugin->SetupParm, &plugin->ad.parm, sizeof(plugin->SetupParm)))
   {
     plugin->ad.parm = plugin->SetupParm;
-    plugin->StoreSetup();
     plugin->InstantConfigure();
+    plugin->StoreSetup();
   }
 }
 
@@ -805,7 +862,13 @@ bool cDFAtmoPlugin::ProcessArgs(int argc, char *argv[])
 
 bool cDFAtmoPlugin::Start(void)
 {
+  atmo_parameters_t save = ad.parm;
+
   Configure();
+
+  if (memcmp(&save, &ad.parm, sizeof(ad)))
+    StoreSetup();
+
   return true;
 }
 
@@ -927,13 +990,8 @@ void cDFAtmoPlugin::Configure(void)
 
   if (ad.parm.enabled)
   {
-    atmo_parameters_t save = ad.parm;
-
     int send = !ad.driver_opened;
     int start = !open_output_driver(&ad);
-
-    if (memcmp(&save, &ad.parm, sizeof(ad)))
-      StoreSetup();
 
     if (ad.sum_channels < 1 || ad.active_parm.top != ad.parm.top ||
                     ad.active_parm.bottom != ad.parm.bottom ||

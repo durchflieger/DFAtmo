@@ -1,3 +1,9 @@
+dfatmo (0.2-1) lucid; urgency=low
+
+  * New upstream version
+
+ -- Andreas Auras <yak54@inkennet.de>  Sun, 13 May 2012 00:19:24 +0200
+
 dfatmo (0.2-0) lucid; urgency=low
 
   * Added vdr-plugin-dfatmo package

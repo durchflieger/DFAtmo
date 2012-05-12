@@ -1,3 +1,7 @@
+--- Version 0.2.1
+VDR plugin: Added suspend mode handling
+VDR plugin: Fixed incorrect change of setup parameters when changeing temporary parameters
+
 --- Version 0.2
 
 Added support for VDR with new DFAtmo VDR plugin.
