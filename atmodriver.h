@@ -71,6 +71,9 @@ typedef const char* lib_error_t;
 
 #include "dfatmo.h"
 
+/* Only pixel that are above the minimum weight limit are calculated.  12 -> ~5% */
+#define MIN_WEIGHT_LIMIT        12
+
 /* accuracy of color calculation */
 #define h_MAX   255
 #define s_MAX   255
@@ -85,6 +88,7 @@ enum { FILTER_NONE = 0, FILTER_PERCENTAGE, FILTER_COMBINED, NUM_FILTERS };
 
 typedef struct { uint8_t h, s, v; } hsv_color_t;
 typedef struct { int r, g, b; } rgb_color_sum_t;
+typedef struct { uint32_t pos; uint16_t channel; uint8_t weight; } weight_tab_t;
 
 typedef struct {
     /* configuration related */
@@ -102,7 +106,8 @@ typedef struct {
   int img_size, alloc_img_size;
   int edge_weighting;
   hsv_color_t *hsv_img;
-  uint8_t *weight;
+  int weight_tab_size;
+  weight_tab_t *weight_tab, *weight_tab_end;
 
     /* color filter related */
   rgb_color_t *filtered_colors;
@@ -124,9 +129,6 @@ typedef struct {
   rgb_color_t *output_colors, *last_output_colors;
 
 } atmo_driver_t;
-
-
-int *dfatmo_driver_log_level;
 
 
 static inline void rgb_to_hsv(hsv_color_t *hsv, int r, int g, int b) {
@@ -171,9 +173,13 @@ static inline void rgb_to_hsv(hsv_color_t *hsv, int r, int g, int b) {
 }
 
 
+#define insert_weight(_c_, _w_) { tmpw = (_w_); if (tmpw > MIN_WEIGHT_LIMIT) { wt->pos = pos; wt->channel = (_c_); wt->weight = tmpw; ++wt; }}
+
 static void calc_weight(atmo_driver_t *self) {
   int row, col, c;
-  uint8_t *weight = self->weight;
+  uint8_t tmpw;
+  weight_tab_t *wt = self->weight_tab;
+  weight_tab_t *wte = wt + self->weight_tab_size;
   const int width = self->analyze_width;
   const int height = self->analyze_height;
   const double w = self->edge_weighting > 10 ? (double)self->edge_weighting / 10.0: 1.0;
@@ -186,6 +192,7 @@ static void calc_weight(atmo_driver_t *self) {
   const int top_right_channel = self->active_parm.top_right;
   const int bottom_left_channel = self->active_parm.bottom_left;
   const int bottom_right_channel = self->active_parm.bottom_right;
+  const int n = self->sum_channels;
 
   const int sum_top_channels = top_channels + top_left_channel + top_right_channel;
   const int sum_bottom_channels = bottom_channels + bottom_left_channel + bottom_right_channel;
@@ -198,6 +205,7 @@ static void calc_weight(atmo_driver_t *self) {
   const double fheight = height - 1;
   const double fwidth = width - 1;
 
+  uint32_t pos = 0;
   for (row = 0; row < height; ++row)
   {
     double row_norm = (double)row / fheight;
@@ -210,55 +218,87 @@ static void calc_weight(atmo_driver_t *self) {
       int left = (int)(255.0 * pow((1.0 - col_norm), w));
       int right = (int)(255.0 * pow(col_norm, w));
 
+      if ((wte - wt) <= n)
+      {
+        self->weight_tab_end = wt;
+
+        int wpos = (wt - self->weight_tab);
+        int dim = self->weight_tab_size + (width * height);
+        wt = (weight_tab_t *) realloc(self->weight_tab, dim * sizeof(weight_tab_t));
+        if (!wt)
+          return;
+        self->weight_tab = wt;
+        self->weight_tab_size = dim;
+        wte = wt + dim;
+        wt += wpos;
+      }
+
       for (c = top_left_channel; c < (top_channels + top_left_channel); ++c)
-        *weight++ = (col >= ((width * c) / sum_top_channels) && col < ((width * (c + 1)) / sum_top_channels) && row < center_y) ? top: 0;
+        insert_weight((c - top_left_channel),
+            ((col >= ((width * c) / sum_top_channels) && col < ((width * (c + 1)) / sum_top_channels) && row < center_y) ? top: 0));
 
       for (c = bottom_left_channel; c < (bottom_channels + bottom_left_channel); ++c)
-        *weight++ = (col >= ((width * c) / sum_bottom_channels) && col < ((width * (c + 1)) / sum_bottom_channels) && row >= center_y) ? bottom: 0;
+        insert_weight((c - bottom_left_channel + top_channels),
+            ((col >= ((width * c) / sum_bottom_channels) && col < ((width * (c + 1)) / sum_bottom_channels) && row >= center_y) ? bottom: 0));
 
       for (c = top_left_channel; c < (left_channels + top_left_channel); ++c)
-        *weight++ = (row >= ((height * c) / sum_left_channels) && row < ((height * (c + 1)) / sum_left_channels) && col < center_x) ? left: 0;
+        insert_weight((c - top_left_channel + top_channels + bottom_channels),
+            ((row >= ((height * c) / sum_left_channels) && row < ((height * (c + 1)) / sum_left_channels) && col < center_x) ? left: 0));
 
       for (c = top_right_channel; c < (right_channels + top_right_channel); ++c)
-        *weight++ = (row >= ((height * c) / sum_right_channels) && row < ((height * (c + 1)) / sum_right_channels) && col >= center_x) ? right: 0;
+        insert_weight((c - top_right_channel + top_channels + bottom_channels + left_channels),
+            ((row >= ((height * c) / sum_right_channels) && row < ((height * (c + 1)) / sum_right_channels) && col >= center_x) ? right: 0));
 
       if (center_channel)
-        *weight++ = 255;
+        insert_weight((top_channels + bottom_channels + left_channels + right_channels), 255);
 
       if (top_left_channel)
-        *weight++ = (col < center_x && row < center_y) ? ((top > left) ? top: left) : 0;
+        insert_weight((top_channels + bottom_channels + left_channels + right_channels + center_channel),
+            ((col < center_x && row < center_y) ? ((top > left) ? top: left) : 0));
 
       if (top_right_channel)
-        *weight++ = (col >= center_x && row < center_y) ? ((top > right) ? top: right): 0;
+        insert_weight((top_channels + bottom_channels + left_channels + right_channels + center_channel + top_left_channel),
+            ((col >= center_x && row < center_y) ? ((top > right) ? top: right): 0));
 
       if (bottom_left_channel)
-        *weight++ = (col < center_x && row >= center_y) ? ((bottom > left) ? bottom: left): 0;
+        insert_weight((top_channels + bottom_channels + left_channels + right_channels + center_channel + top_left_channel + top_right_channel),
+            ((col < center_x && row >= center_y) ? ((bottom > left) ? bottom: left): 0));
 
       if (bottom_right_channel)
-        *weight++ = (col >= center_x && row >= center_y) ? ((bottom > right) ? bottom: right): 0;
+        insert_weight((top_channels + bottom_channels + left_channels + right_channels + center_channel + top_left_channel + top_right_channel + bottom_left_channel),
+            ((col >= center_x && row >= center_y) ? ((bottom > right) ? bottom: right): 0));
+
+      ++pos;
     }
+  }
+  self->weight_tab_end = wt;
+
+  pos = (wt - self->weight_tab);
+  c = pos + n + 1;
+  wt = (weight_tab_t *) realloc(self->weight_tab, c * sizeof(weight_tab_t));
+  if (wt)
+  {
+    self->weight_tab = wt;
+    self->weight_tab_end = wt + pos;
+    self->weight_tab_size = c;
   }
 }
 
 
 static void calc_hue_hist(atmo_driver_t *self) {
-  hsv_color_t *hsv = self->hsv_img;
-  uint8_t *weight = self->weight;
-  int img_size = self->img_size;
-  const int n = self->sum_channels;
-  uint64_t * const hue_hist = self->hue_hist;
+  weight_tab_t *wt = self->weight_tab;
+  weight_tab_t * const wte = self->weight_tab_end;
+  hsv_color_t * const hsv_img = self->hsv_img;
+  uint64_t * const hue_hist = self->active_parm.hue_win_size ? self->hue_hist: self->w_hue_hist;
   const int darkness_limit = self->active_parm.darkness_limit;
 
-  memset(hue_hist, 0, (n * (h_MAX+1) * sizeof(uint64_t)));
+  memset(hue_hist, 0, (self->sum_channels * (h_MAX+1) * sizeof(uint64_t)));
 
-  while (img_size--) {
-    if (hsv->v >= darkness_limit) {
-      int c;
-      for (c = 0; c < n; ++c)
-        hue_hist[c * (h_MAX+1) + hsv->h] += weight[c] * hsv->v;
-    }
-    weight += n;
-    ++hsv;
+  while (wt < wte) {
+    hsv_color_t *hsv = hsv_img + wt->pos;
+    if (hsv->v >= darkness_limit)
+      hue_hist[wt->channel * (h_MAX+1) + hsv->h] += wt->weight * hsv->v;
+    ++wt;
   }
 }
 
@@ -320,28 +360,25 @@ static void calc_most_used_hue(atmo_driver_t *self) {
 
 
 static void calc_sat_hist(atmo_driver_t *self) {
-  hsv_color_t *hsv = self->hsv_img;
-  uint8_t *weight = self->weight;
-  int img_size = self->img_size;
-  const int n = self->sum_channels;
-  uint64_t * const sat_hist = self->sat_hist;
+  weight_tab_t *wt = self->weight_tab;
+  weight_tab_t * const wte = self->weight_tab_end;
+  hsv_color_t * const hsv_img = self->hsv_img;
+  uint64_t * const sat_hist = self->active_parm.sat_win_size ? self->sat_hist: self->w_sat_hist;
   int * const most_used_hue = self->most_used_hue;
   const int darkness_limit = self->active_parm.darkness_limit;
   const int hue_win_size = self->active_parm.hue_win_size;
 
-  memset(sat_hist, 0, (n * (s_MAX+1) * sizeof(uint64_t)));
+  memset(sat_hist, 0, (self->sum_channels * (s_MAX+1) * sizeof(uint64_t)));
 
-  while (img_size--) {
+  while (wt < wte) {
+    hsv_color_t *hsv = hsv_img + wt->pos;
     if (hsv->v >= darkness_limit) {
       int h = hsv->h;
-      int c;
-      for (c = 0; c < n; ++c) {
-        if (h > (most_used_hue[c] - hue_win_size) && h < (most_used_hue[c] + hue_win_size))
-          sat_hist[c * (s_MAX+1) + hsv->s] += weight[c] * hsv->v;
-      }
+      int c = wt->channel;
+      if (h >= (most_used_hue[c] - hue_win_size) && h <= (most_used_hue[c] + hue_win_size))
+        sat_hist[c * (s_MAX+1) + hsv->s] += wt->weight * hsv->v;
     }
-    weight += n;
-    ++hsv;
+    ++wt;
   }
 }
 
@@ -397,9 +434,9 @@ static void calc_most_used_sat(atmo_driver_t *self) {
 
 
 static void calc_average_brightness(atmo_driver_t *self) {
-  hsv_color_t *hsv = self->hsv_img;
-  uint8_t *weight = self->weight;
-  int img_size = self->img_size;
+  weight_tab_t *wt = self->weight_tab;
+  weight_tab_t * const wte = self->weight_tab_end;
+  hsv_color_t * const hsv_img = self->hsv_img;
   const int n = self->sum_channels;
   const int darkness_limit = self->active_parm.darkness_limit;
   const uint64_t bright = self->active_parm.brightness;
@@ -410,16 +447,13 @@ static void calc_average_brightness(atmo_driver_t *self) {
   memset(avg_bright, 0, (n * sizeof(uint64_t)));
   memset(avg_cnt, 0, (n * sizeof(int)));
 
-  while (img_size--) {
-    const int v = hsv->v;
-    if (v >= darkness_limit) {
-      for (c = 0; c < n; ++c) {
-        avg_bright[c] += v * weight[c];
-        avg_cnt[c] += weight[c];
-      }
+  while (wt < wte) {
+    hsv_color_t *hsv = hsv_img + wt->pos;
+    if (hsv->v >= darkness_limit) {
+      avg_bright[wt->channel] += hsv->v * wt->weight;
+      avg_cnt[wt->channel] += wt->weight;
     }
-    weight += n;
-    ++hsv;
+    ++wt;
   }
 
   for (c = 0; c < n; ++c) {
@@ -534,11 +568,12 @@ static int configure_analyze_size(atmo_driver_t *self, int width, int height) {
     /* allocate hsv and weight images */
   if (size > self->alloc_img_size) {
     free(self->hsv_img);
-    free(self->weight);
+    free(self->weight_tab);
     self->alloc_img_size = 0;
     self->hsv_img = (hsv_color_t *) malloc(size * sizeof(hsv_color_t));
-    self->weight = (uint8_t *) malloc(size * self->sum_channels * sizeof(uint8_t));
-    if (self->hsv_img == NULL || self->weight == NULL) {
+    self->weight_tab_size = size;
+    self->weight_tab = (weight_tab_t *) malloc(size * sizeof(weight_tab_t));
+    if (self->hsv_img == NULL || self->weight_tab == NULL) {
       DFATMO_LOG(DFLOG_ERROR, "allocating image memory failed!");
       return 1;
     }
@@ -555,7 +590,7 @@ static int configure_analyze_size(atmo_driver_t *self, int width, int height) {
     self->analyze_width = width;
     self->analyze_height = height;
     calc_weight(self);
-    DFATMO_LOG(DFLOG_INFO, "analyze size %dx%d", width, height);
+    DFATMO_LOG(DFLOG_INFO, "analyze size %dx%d, weight tab size %d", width, height, (int)(self->weight_tab_end - self->weight_tab));
   }
 
   return 0;
@@ -564,7 +599,7 @@ static int configure_analyze_size(atmo_driver_t *self, int width, int height) {
 
 static void free_analyze_images (atmo_driver_t *self) {
   free(self->hsv_img);
-  free(self->weight);
+  free(self->weight_tab);
   free(self->delay_filter_queue);
 }
 
@@ -1096,6 +1131,9 @@ static void init_configuration (atmo_driver_t *self)
 #ifndef trNOOP
 #define trNOOP(x) x
 #endif
+
+int *dfatmo_driver_log_level;
+
 
 static const char *filter_enum[NUM_FILTERS] = { trNOOP("off"), trNOOP("percentage"), trNOOP("combined") };
 static const char *analyze_size_enum[4] = { "64", "128", "192", "256" };

@@ -385,10 +385,12 @@ void cDFAtmoGrabThread::Action(void)
     }
 
     calc_hue_hist(ad);
-    calc_windowed_hue_hist(ad);
+    if (ad->active_parm.hue_win_size)
+      calc_windowed_hue_hist(ad);
     calc_most_used_hue(ad);
     calc_sat_hist(ad);
-    calc_windowed_sat_hist(ad);
+    if (ad->active_parm.sat_win_size)
+      calc_windowed_sat_hist(ad);
     calc_most_used_sat(ad);
     if (ad->active_parm.uniform_brightness)
       calc_uniform_average_brightness(ad);
