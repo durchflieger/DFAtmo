@@ -68,6 +68,9 @@ typedef speed_t dev_speed_t;
 
 #include "dfatmo.h"
 
+/* Maximum size of a telegram send over the serial port */
+#define SIZE_TELEGRAM_BUF      1023
+
 typedef struct {
   output_driver_t output_driver;
   atmo_parameters_t param;
@@ -334,25 +337,67 @@ static void serial_driver_dispose(output_driver_t *this_gen) {
   free(this_gen);
 }
 
+
+enum { COLOR_RED, COLOR_GREEN, COLOR_BLUE };
+typedef struct { int i, color, max, min; } area_info_t;
+
+static uint8_t* insert_color_value(serial_output_driver_t *this, rgb_color_t *colors, area_info_t *g, uint8_t *m) {
+  uint8_t v = 0;
+
+  if (g->i >= g->min && g->i < g->max) {
+    switch (g->color) {
+    case COLOR_RED:
+      v = colors[g->i].r;
+      break;
+    case COLOR_GREEN:
+      v = colors[g->i].g;
+      break;
+    default:
+      v = colors[g->i].b;
+    }
+  }
+
+  if (this->escapes) {
+    int n = this->escapes[1];
+    const uint8_t *p = &this->escapes[2];
+    while (n) {
+      if (v == *p) {
+        *m++ = this->escapes[0];
+        break;
+      }
+      ++p;
+      --n;
+    }
+  }
+
+  *m++ = v;
+
+  return m;
+}
+
+
 static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *colors, rgb_color_t *last_colors) {
   serial_output_driver_t *this = (serial_output_driver_t *) this_gen;
-  uint8_t msg[1024];
+  uint8_t msg[SIZE_TELEGRAM_BUF+1];
   uint8_t *m = msg;
   int data = 0, area = 0, area_num = 0, color = 0;
   const char *p = this->protocol;
   dev_size_t len, written;
   enum { TOP_AREA, BOTTOM_AREA, LEFT_AREA, RIGHT_AREA, CENTER_AREA, TOP_LEFT_AREA, TOP_RIGHT_AREA, BOTTOM_LEFT_AREA, BOTTOM_RIGHT_AREA };
-  enum { COLOR_RED, COLOR_GREEN, COLOR_BLUE };
-  enum { START_STATE, DEC_CONST_STATE, HEX_CONST_STATE, AREA_STATE, AREA_NUM_STATE, CRC_STATE };
+  enum { START_STATE, DEC_CONST_STATE, HEX_CONST_STATE, AREA_STATE, AREA_NUM_STATE, CRC_STATE, BYTE_REPEAT_STATE, BYTE_FILLUP_STATE, GROUP_INC_STATE, GROUP_DEC_STATE };
   enum { NO_ERR, SYNTAX_ERR, DATA_ERR, LENGTH_ERR, CRC_MODE_ERR };
   enum { ERR_CRC_MODE, XOR_CRC_MODE };
   int state = START_STATE;
   int err = NO_ERR;
   int crc_mode = ERR_CRC_MODE;
   uint8_t *crc_pos = NULL;
+  area_info_t last_group[3];
+  int lg_i = 0;
 
   if (this->devfd == INVALID_DEV_HANDLE)
     return -1;
+
+  memset(last_group, 0, sizeof(last_group));
 
   /* parse protocol descriptor and build data packet */
   while (err == NO_ERR) {
@@ -387,6 +432,14 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
       case 'C':
         state = CRC_STATE;
         break;
+      case '+':
+        data = 0;
+        state = GROUP_INC_STATE;
+        break;
+      case '-':
+        data = 0;
+        state = GROUP_DEC_STATE;
+        break;
       default:
         if (c >= '0' && c <= '9') {
           data = c - '0';
@@ -394,6 +447,48 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
         } else
           err = SYNTAX_ERR;
       }
+      break;
+
+    case GROUP_INC_STATE:
+      if (c >= '0' && c <= '9') {
+        data = data * 10 + c - '0';
+      } else if (c == '|' || !c) {
+        while (data)
+        {
+          int i = 3;
+          while (i && (m - msg) < SIZE_TELEGRAM_BUF) {
+            area_info_t *g = &last_group[lg_i];
+            lg_i = (lg_i + 1) % 3;
+            ++g->i;
+            m = insert_color_value(this, colors, g, m);
+            --i;
+          }
+          --data;
+        }
+        state = START_STATE;
+      } else
+        err = SYNTAX_ERR;
+      break;
+
+    case GROUP_DEC_STATE:
+      if (c >= '0' && c <= '9') {
+        data = data * 10 + c - '0';
+      } else if (c == '|' || !c) {
+        while (data)
+        {
+          int i = 3;
+          while (i && (m - msg) < SIZE_TELEGRAM_BUF) {
+            area_info_t *g = &last_group[lg_i];
+            lg_i = (lg_i + 1) % 3;
+            --g->i;
+            m = insert_color_value(this, colors, g, m);
+            --i;
+          }
+          --data;
+        }
+        state = START_STATE;
+      } else
+        err = SYNTAX_ERR;
       break;
 
     case CRC_STATE:
@@ -423,6 +518,14 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
         data = data * 10 + c - '0';
         if (data > 255)
           err = DATA_ERR;
+      } else if (c == '*') {
+        *m++ = data;
+        data = 0;
+        state = BYTE_REPEAT_STATE;
+      } else if (c == '/') {
+        *m++ = data;
+        data = 0;
+        state = BYTE_FILLUP_STATE;
       } else if (c == '|' || !c) {
         *m++ = data;
         state = START_STATE;
@@ -443,8 +546,44 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
         data = data * 16 + c - 'A' + 10;
         if (data > 255)
           err = DATA_ERR;
+      } else if (c == '*') {
+        *m++ = data;
+        data = 0;
+        state = BYTE_REPEAT_STATE;
+      } else if (c == '/') {
+        *m++ = data;
+        data = 0;
+        state = BYTE_FILLUP_STATE;
       } else if (c == '|' || !c) {
         *m++ = data;
+        state = START_STATE;
+      } else
+        err = SYNTAX_ERR;
+      break;
+
+    case BYTE_REPEAT_STATE:
+      if (c >= '0' && c <= '9') {
+        data = data * 10 + c - '0';
+        if (((m - msg) + data) > SIZE_TELEGRAM_BUF)
+          err = LENGTH_ERR;
+      } else if (c == '|' || !c) {
+        uint8_t lc = m[-1];
+        while (data--)
+          *m++ = lc;
+        state = START_STATE;
+      } else
+        err = SYNTAX_ERR;
+      break;
+
+    case BYTE_FILLUP_STATE:
+      if (c >= '0' && c <= '9') {
+        data = data * 10 + c - '0';
+        if (data > SIZE_TELEGRAM_BUF)
+          err = LENGTH_ERR;
+      } else if (c == '|' || !c) {
+        uint8_t lc = m[-1];
+        while ((m - msg) < data)
+          *m++ = lc;
         state = START_STATE;
       } else
         err = SYNTAX_ERR;
@@ -514,7 +653,7 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
           area_num = area_num * 10 + c - '0';
         else if (c == '|' || !c) {
           int n, i;
-          uint8_t v;
+          area_info_t *g = &last_group[lg_i];
           switch (area) {
           case TOP_AREA:
             i = 0;
@@ -554,33 +693,13 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
           }
           if (area_num)
             --area_num;
-          if (area_num < n) {
-            i += area_num;
-            switch (color) {
-            case COLOR_RED:
-              v = colors[i].r;
-              break;
-            case COLOR_GREEN:
-              v = colors[i].g;
-              break;
-            default:
-              v = colors[i].b;
-            }
-          } else
-            v = 0;
-          if (this->escapes) {
-            int n = this->escapes[1];
-            const uint8_t *p = &this->escapes[2];
-            while (n) {
-              if (v == *p) {
-                *m++ = this->escapes[0];
-                break;
-              }
-              ++p;
-              --n;
-            }
-          }
-          *m++ = v;
+          g->min = i;
+          g->max = i + n;
+          i += area_num;
+          g->i = i;
+          g->color = color;
+          m = insert_color_value(this, colors, g, m);
+          lg_i = (lg_i + 1) % 3;
           state = START_STATE;
         } else
           err = SYNTAX_ERR;
@@ -593,7 +712,7 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
       break;
     }
 
-    if ((m - msg) >= sizeof(msg))
+    if ((m - msg) > SIZE_TELEGRAM_BUF)
       err = LENGTH_ERR;
   }
 
