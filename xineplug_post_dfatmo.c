@@ -41,7 +41,7 @@
 
 #include "atmodriver.h"
 
-#define PLUGIN_DESC_TEXT        "DFAtmo V0.2.0 - Analyze video picture and generate output data for atmolight controllers"
+#define PLUGIN_DESC_TEXT        "DFAtmo V0.3.0 - Analyze video picture and generate output data for atmolight controllers"
 
 #define GRAB_TIMEOUT            100     /* max. time waiting for next grab image [ms] */
 #define THREAD_RESPONSE_TIMEOUT 500000  /* timeout for thread state change [us] */

@@ -413,7 +413,11 @@ start_delay *      250              Delay after stream start before first output
 
 enabled *          1                Enable/Disable output of color values to atmolight controller.
                                     Valid values: 0 (disable), 1 (enable)
+
         
+
+Options of serial output driver:
+--------------------------------
 
 The serial output driver understood some more options within the "driver_param" parameter.
 These options are applied as keyword/value pairs separated by a colon. Several options
@@ -450,6 +454,7 @@ proto:<descriptor>
             Example: Rl2 -> red color of left area section 2
                      Btl -> blue color of top left area
                      xFF -> constant value 255
+                     13  -> constant value 13
 
             For constant values a repeat count or fill up count could be specified to
             define a arbitrary number of bytes with the same constant value:
@@ -460,10 +465,11 @@ proto:<descriptor>
                          length of sequence reaches 512 bytes.
 
             A couple of RGB groups within the same area with monotone increasing or
-            decreasing sections could be defined with the following shortcut operators:
+            decreasing sections could be defined with the shortcut operators '+n' and
+            '-n' where n is the number of following groups to generate:
             
-            "Rl1|Gl1|Bl1|+2" is equal to "Rl1|Gl1|Bl1|Rl2|Gl2|Bl2|Rl3|Gl3|Bl3"
-            "Gb5|Rb5|Bb5|-2" is equal to "Gb5|Rb5|Bb5|Gb4|Rb4|Bb4|Gb3|Rb3|Bb3"
+                 "Rl1|Gl1|Bl1|+2" is equal to "Rl1|Gl1|Bl1|Rl2|Gl2|Bl2|Rl3|Gl3|Bl3"
+                 "Gb5|Rb5|Bb5|-2" is equal to "Gb5|Rb5|Bb5|Gb4|Rb4|Bb4|Gb3|Rb3|Bb3"
                                                              
             There are predefined protocol sequences that could be specified as the
             descriptor:
@@ -503,9 +509,25 @@ amblone:
 
 
 Examples of driver parameter:
-"COM5&speed:115200&proto:classic"
-"/dev/ttyUSB0&speed:57600&proto:255|0|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb"
-"/dev/ttySEDU&speed:500000&proto:x5A|xA1|Rbr|Gbr|Bbr|Rb14|Gb14|Bb14|-13|Rbl|Gbl|Bbl|Rl8|Gl8|Bl8|-7|Rtl|Gtl|Btl|Rt1|Gt1|Bt1|+13|Rtr|Gtr|Btr|Rr1|Gr1|Br1|+7|0/258|xA5"
+  "COM5&speed:115200&proto:classic"
+
+  "/dev/ttyUSB0&speed:57600&proto:255|0|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb"
+
+The following example is for a digital LED stripe installation with SEDU controller with
+14 Leds at top/bottom, 8 Leds at left/right, 1 Led for each corner.
+Each Led is a separate section for which a three byte color value in order R,G,B is send. 
+First Led of chain starts at bottom right corner. Order of Leds is clock wise around the TV.
+Mode A1 of SEDU miniDMX protocol is used with 256 data bytes.
+Total frame length is 259 bytes.
+Serial Port is "/dev/ttySEDU".
+Baurdrate is 500000.
+   
+  "/dev/ttySEDU&speed:500000&proto:x5A|xA1|Rbr|Gbr|Bbr|Rb14|Gb14|Bb14|-13|Rbl|Gbl|Bbl|Rl8|Gl8|Bl8|-7|Rtl|Gtl|Btl|Rt1|Gt1|Bt1|+13|Rtr|Gtr|Btr|Rr1|Gr1|Br1|+7|0/258|xA5"
+
+
+
+Python script output driver:
+----------------------------
 
 The DFAtmo XBMC addon supports output drivers written as python scripts. To use such a
 driver set the "Output driver" parameter to "Custom" and enter the name of the python module
@@ -517,8 +539,10 @@ similar to the native file output driver. The name of the file is specified
 in the "Driver parameters" field.
 
 
+
 Performance hints:
 ------------------
+
 Continuously analyzing the video picture is a cpu intensive job. Several parameters of DFAtmo have influence
 on the amount of cpu load that DFAtmo will produce while running. As a hint for optimization the influence
 on cpu load by the parameters shows the following table:
