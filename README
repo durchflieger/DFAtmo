@@ -11,10 +11,10 @@ Project repository: git://github.com/durchflieger/DFAtmo.git
 Description:
 ------------
 
-"DFAtmo" allows you to drive a colored backlighting for TVs similar to the
+"DFAtmo" allows you to drive a colored back lighting for TVs similar to the
 "Ambilight" of Philips televisions. The displayed color depends on the
 actual shown video content.
-Backlighting your TV is best done with light-emitting diodes (LEDs) that are
+Back lighting your TV is best done with light-emitting diodes (LEDs) that are
 arranged as RGB light sources on stripes that could be mounted at the back
 of your TV.
 To drive these LED's a dedicated hardware is necessary that is called the
@@ -96,7 +96,7 @@ default for Linux is "/usr/local". Please note that the XBMC addon currently
 searches the components under "/usr" and "/usr/local". So you should use
 one of these locations.
 
-Compiling and installing the two components for linux:
+Compiling and installing the two components for Linux:
   make dfatmo
   make dfatmoinstall
   
@@ -184,8 +184,8 @@ Installation of the DFAtmo addon zip file could be done with the usual XBMC
 functionality.
 The addon could be configured by the user with the usual addon settings panel.
 
-The addon could be started and stopped from the Program's menue. Alternativley
-the addon could be started automatically by setting the auto lauch option
+The addon could be started and stopped from the Program's menu. Alternatively
+the addon could be started automatically by setting the auto launch option
 in the addon settings menu.
 
 
@@ -407,7 +407,7 @@ start_delay *      250              Delay after stream start before first output
                                     assume that the video output is suspended and enters suspend mode.
                                     While in suspend mode the DFAtmo grab and output thread rate is set to the start delay
                                     time to lower CPU usage.
-                                    Currently this parameter is not suported by XBMC addon.
+                                    Currently this parameter is not supported by XBMC addon.
                                     Valid values 0 ... 5000.
                                     
 
@@ -416,7 +416,7 @@ enabled *          1                Enable/Disable output of color values to atm
         
 
 The serial output driver understood some more options within the "driver_param" parameter.
-These options are applied as keyword/value pairs seperated by a colon. Several options
+These options are applied as keyword/value pairs separated by a colon. Several options
 are separated by ampersand.
 
 usb:<expr>
@@ -433,7 +433,7 @@ proto:<descriptor>
             (decimal or hexadecimal), a color variable or a checksum variable.
             The name for the color variable consists of the color code, area code and
             optional the section number. Section numbers start from 1.
-            Each byte position is separated by "|" and all letters are case insensitiv.
+            Each byte position is separated by "|" and all letters are case insensitive.
             Do not include any whitespace within the descriptor string.
 
             The color codes are: R = red, G = green, B = blue
@@ -450,7 +450,21 @@ proto:<descriptor>
             Example: Rl2 -> red color of left area section 2
                      Btl -> blue color of top left area
                      xFF -> constant value 255
-                     
+
+            For constant values a repeat count or fill up count could be specified to
+            define a arbitrary number of bytes with the same constant value:
+            
+              56*15   -> 15 constant bytes of value 56
+              xFA*20  -> 20 constant bytes of hexadecimal value FA
+              23/512  -> Fill up the byte sequence with constant bytes of value 23 until
+                         length of sequence reaches 512 bytes.
+
+            A couple of RGB groups within the same area with monotone increasing or
+            decreasing sections could be defined with the following shortcut operators:
+            
+            "Rl1|Gl1|Bl1|+2" is equal to "Rl1|Gl1|Bl1|Rl2|Gl2|Bl2|Rl3|Gl3|Bl3"
+            "Gb5|Rb5|Bb5|-2" is equal to "Gb5|Rb5|Bb5|Gb4|Rb4|Bb4|Gb3|Rb3|Bb3"
+                                                             
             There are predefined protocol sequences that could be specified as the
             descriptor:
             
@@ -467,7 +481,7 @@ proto:<descriptor>
                            areas: Left 1, Right 1, Top 1, Bottom 1, Left 2, Right 2, Top 2, Bottom 2
                            Note: Karatelight expected the number of colors in sequence at byte position 4.
                                                 
-            In case you do not specifiy a protocol descriptor the "classic" protocol
+            In case you do not specify a protocol descriptor the "classic" protocol
             for Atmolight 2 channel controller will be used as default.
             Protocol definition for this controller can be found here:
                 http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
@@ -491,7 +505,7 @@ amblone:
 Examples of driver parameter:
 "COM5&speed:115200&proto:classic"
 "/dev/ttyUSB0&speed:57600&proto:255|0|0|12|Rl|Gl|Bl|Rr|Gr|Br|Rt|Gt|Bt|Rb|Gb|Bb"
-
+"/dev/ttySEDU&speed:500000&proto:x5A|xA1|Rbr|Gbr|Bbr|Rb14|Gb14|Bb14|-13|Rbl|Gbl|Bbl|Rl8|Gl8|Bl8|-7|Rtl|Gtl|Btl|Rt1|Gt1|Bt1|+13|Rtr|Gtr|Btr|Rr1|Gr1|Br1|+7|0/258|xA5"
 
 The DFAtmo XBMC addon supports output drivers written as python scripts. To use such a
 driver set the "Output driver" parameter to "Custom" and enter the name of the python module
@@ -501,4 +515,21 @@ The python module should be store in the DFAtmo XBMC addon directory under
 There is already a example driver called "mydriver" that writes a file with color data
 similar to the native file output driver. The name of the file is specified
 in the "Driver parameters" field.
+
+
+Performance hints:
+------------------
+Continuously analyzing the video picture is a cpu intensive job. Several parameters of DFAtmo have influence
+on the amount of cpu load that DFAtmo will produce while running. As a hint for optimization the influence
+on cpu load by the parameters shows the following table:
+
+Parameter             increases CPU load                   decreases CPU load           Influence
+analyze_size               greater                              smaller                   high
+analyze rate               shorter                              longer                    high
+edge weighting             lower                                higher                    high
+number of sections         more                                 less                      moderate
+windowing size (hue/sat)   bigger                               smaller                   moderate
+darkness_limit             lower                                higher                    small
+
+
 
