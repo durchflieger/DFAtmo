@@ -519,11 +519,11 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
         if (data > 255)
           err = DATA_ERR;
       } else if (c == '*') {
-        *m++ = data;
+        *m = data;
         data = 0;
         state = BYTE_REPEAT_STATE;
       } else if (c == '/') {
-        *m++ = data;
+        *m = data;
         data = 0;
         state = BYTE_FILLUP_STATE;
       } else if (c == '|' || !c) {
@@ -547,11 +547,11 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
         if (data > 255)
           err = DATA_ERR;
       } else if (c == '*') {
-        *m++ = data;
+        *m = data;
         data = 0;
         state = BYTE_REPEAT_STATE;
       } else if (c == '/') {
-        *m++ = data;
+        *m = data;
         data = 0;
         state = BYTE_FILLUP_STATE;
       } else if (c == '|' || !c) {
@@ -567,7 +567,7 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
         if (((m - msg) + data) > SIZE_TELEGRAM_BUF)
           err = LENGTH_ERR;
       } else if (c == '|' || !c) {
-        uint8_t lc = m[-1];
+        uint8_t lc = *m;
         while (data--)
           *m++ = lc;
         state = START_STATE;
@@ -581,7 +581,7 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
         if (data > SIZE_TELEGRAM_BUF)
           err = LENGTH_ERR;
       } else if (c == '|' || !c) {
-        uint8_t lc = m[-1];
+        uint8_t lc = *m;
         while ((m - msg) < data)
           *m++ = lc;
         state = START_STATE;
