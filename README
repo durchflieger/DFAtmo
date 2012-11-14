@@ -433,28 +433,16 @@ usb:<expr>
 proto:<descriptor>
             Protocol descriptor string that describes the byte sequence that is send to
             the Atmolight controller.
-            For each byte position within the sequence you can specify a constant value 
-            (decimal or hexadecimal), a color variable or a checksum variable.
-            The name for the color variable consists of the color code, area code and
-            optional the section number. Section numbers start from 1.
-            Each byte position is separated by "|" and all letters are case insensitive.
+            Within the descriptor you can specify constant values, color variables, 
+            checksum variables and shortcut operators.
+            Each position is separated by "|" and all letters are case insensitive.
             Do not include any whitespace within the descriptor string.
-
-            The color codes are: R = red, G = green, B = blue
-
-            The area codes are: T = top, B = bottom, L = left, R = right, C = center,
-                                TL = top left, TR = top right, BL = bottom left,
-                                BR = bottom right
-
-            The checksum variables are: CX = One byte XOR checksum over all bytes of the
-                                             sequence excluding the checksum byte.
-                                             (The karatelight controller expected this
-                                             checksum at byte position 3) 
-
-            Example: Rl2 -> red color of left area section 2
-                     Btl -> blue color of top left area
-                     xFF -> constant value 255
-                     13  -> constant value 13
+            
+            Constant values could be specified as decimal or by prefixing with letter "x" as
+            hexadecimal values:
+            
+              xFF -> constant value 255
+              13  -> constant value 13
 
             For constant values a repeat count or fill up count could be specified to
             define a arbitrary number of bytes with the same constant value:
@@ -463,6 +451,34 @@ proto:<descriptor>
               xFA*20  -> 20 constant bytes of hexadecimal value FA
               23/512  -> Fill up the byte sequence with constant bytes of value 23 until
                          length of sequence reaches 512 bytes.
+
+            The name for a color variable consists of the color code, area code and
+            optional the section number.
+
+            The color codes are: R = red, G = green, B = blue
+
+            The area codes are: T = top, B = bottom, L = left, R = right, C = center,
+                                TL = top left, TR = top right, BL = bottom left,
+                                BR = bottom right
+
+            Section numbers start at 1 and are counted in increasing order from left
+            to right and top to bottom:
+                            TL T1 T2 ... Tn TR
+                            L1              R1
+                            L2     C        R2
+                            ..              ..
+                            Ln              Rn
+                            BL B1 B2 ... Bn BR
+                            
+            Example: RL2 -> red color of left area section 2
+                     BTL -> blue color of top left area
+                     GB  -> green color of bottom area section 1  
+
+            The checksum variables are:
+            
+              CX = One byte XOR checksum over all bytes of the sequence excluding the
+                   checksum byte. The karatelight controller expected this checksum at
+                   byte position 3. 
 
             A couple of RGB groups within the same area with monotone increasing or
             decreasing sections could be defined with the shortcut operators '+n' and
@@ -520,9 +536,8 @@ First Led of chain starts at bottom right corner. Order of Leds is clock wise ar
 Mode A1 of SEDU miniDMX protocol is used with 256 data bytes.
 Total frame length is 259 bytes.
 Serial Port is "/dev/ttySEDU".
-Baurdrate is 500000.
    
-  "/dev/ttySEDU&speed:500000&proto:x5A|xA1|Rbr|Gbr|Bbr|Rb14|Gb14|Bb14|-13|Rbl|Gbl|Bbl|Rl8|Gl8|Bl8|-7|Rtl|Gtl|Btl|Rt1|Gt1|Bt1|+13|Rtr|Gtr|Btr|Rr1|Gr1|Br1|+7|0/258|xA5"
+  "/dev/ttySEDU&proto:x5A|xA1|Rbr|Gbr|Bbr|Rb14|Gb14|Bb14|-13|Rbl|Gbl|Bbl|Rl8|Gl8|Bl8|-7|Rtl|Gtl|Btl|Rt1|Gt1|Bt1|+13|Rtr|Gtr|Btr|Rr1|Gr1|Br1|+7|0/258|xA5"
 
 
 
