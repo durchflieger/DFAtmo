@@ -1,3 +1,24 @@
+--- Version 0.3.0
+Optimize performance of image analysis algorithm:
+    1. By introducing a new weight table so that only calculation for pixel
+       with relevant weight (currently > 5%) is done.
+    2. Do not calculate windowed histograms if windowing size is 0.
+Fixed calculation of weight table for border sections.
+Fixed analysis error for saturation window size 0.
+Serial output driver:
+    Extend maximum output package length to 1023 bytes to support SEDU B0 mode. 
+    Enhanced protocol descriptor syntax:
+      For constant values a repeat count or fill up count could be
+      specified to define a arbitrary number of bytes with the same
+      constant value.
+      A couple of RGB groups within the same area with monotone
+      increasing or decreasing sections could be defined with the
+      new shortcut operators '+n' and '-n'.
+README:
+    Added performance hints.
+    Added enhanced protocol descriptor syntax.
+    Added SEDU protocol example.
+
 --- Version 0.2.1
 VDR plugin: Added suspend mode handling
 VDR plugin: Fixed incorrect change of setup parameters when changeing temporary parameters
