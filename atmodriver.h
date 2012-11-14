@@ -220,10 +220,9 @@ static void calc_weight(atmo_driver_t *self) {
 
       if ((wte - wt) <= n)
       {
-        self->weight_tab_end = wt;
-
         int wpos = (wt - self->weight_tab);
         int dim = self->weight_tab_size + (width * height);
+        self->weight_tab_end = wt;
         wt = (weight_tab_t *) realloc(self->weight_tab, dim * sizeof(weight_tab_t));
         if (!wt)
           return;
