@@ -262,7 +262,7 @@ static void calc_weight(atmo_driver_t *self) {
 
       if (top_right_channel)
       {
-        int t = (col >= (width * (top_channels + top_left_channel) / sum_top_channels) && row < center_y) ? top: 0;
+        int t = (col >= ((width * (top_channels + top_left_channel)) / sum_top_channels) && row < center_y) ? top: 0;
         int r = (row < (height / sum_right_channels) && col >= center_x) ? right: 0;
         insert_weight((top_channels + bottom_channels + left_channels + right_channels + center_channel + top_left_channel),
             (t > r) ? t: r);
@@ -271,15 +271,15 @@ static void calc_weight(atmo_driver_t *self) {
       if (bottom_left_channel)
       {
         int b = (col < (width / sum_bottom_channels) && row >= center_y) ? bottom: 0;
-        int l = (row >= (height * (left_channels + top_left_channel) / sum_left_channels) && col < center_x) ? left: 0;
+        int l = (row >= ((height * (left_channels + top_left_channel)) / sum_left_channels) && col < center_x) ? left: 0;
         insert_weight((top_channels + bottom_channels + left_channels + right_channels + center_channel + top_left_channel + top_right_channel),
             (b > l) ? b: l);
       }
 
       if (bottom_right_channel)
       {
-        int b = (col >= (width * (bottom_channels + bottom_left_channel) / sum_bottom_channels) && row >= center_y) ? bottom: 0;
-        int r = (row >= (height * (right_channels + top_right_channel) / sum_right_channels) && col >= center_x) ? right: 0;
+        int b = (col >= ((width * (bottom_channels + bottom_left_channel)) / sum_bottom_channels) && row >= center_y) ? bottom: 0;
+        int r = (row >= ((height * (right_channels + top_right_channel)) / sum_right_channels) && col >= center_x) ? right: 0;
         insert_weight((top_channels + bottom_channels + left_channels + right_channels + center_channel + top_left_channel + top_right_channel + bottom_left_channel),
             (b > r) ? b: r);
       }
