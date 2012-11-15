@@ -24,6 +24,7 @@
 		<setting id="analyze_size" label="Size of analyze image" type="enum" values="64|128|192|256" default="1"/>
 		<setting id="overscan" label="Ignored overscan border [%1000]" type="number" default="0"/>
 		<setting id="edge_weighting" label="Power of edge weighting" type="number" default="60"/>
+    <setting id="weight_limit" label="Limit for edge weighting" type="number" default="12"/>
 		<setting id="darkness_limit" label="Limit for black pixel" type="number" default="1"/>
 		<setting id="analyze_rate" label="Analyze rate [ms]" type="number" default="35"/>
 		<setting id="hue_win_size" label="Hue windowing size" type="enum" values="0|1|2|3|4|5" default="3"/>

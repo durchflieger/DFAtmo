@@ -1,4 +1,10 @@
-dfatmo (0.3-0) precise; urgency=low
+dfatmo (0.3-1) lucid; urgency=low
+
+  * New upstream version
+
+ -- Andreas Auras <yak54@inkennet.de>  Sun, 15 Nov 2012 22:20:38 +0100
+
+dfatmo (0.3-0) lucid; urgency=low
 
   * New upstream version
 

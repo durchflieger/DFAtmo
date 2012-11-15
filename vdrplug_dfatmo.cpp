@@ -110,7 +110,7 @@ static int GetOutputDriverType(const char *Name)
 } // extern "C"
 
 
-static const char *VERSION        = "0.3.0";
+static const char *VERSION        = "0.3.1";
 static const char *DESCRIPTION    = trNOOP("The driver for 'Atmolight' controllers");
 static const char *MAINMENUENTRY  = "DFAtmo";
 
@@ -721,6 +721,7 @@ void cDFAtmoSetupMenu::SetAnalysisMenu(void)
   AddParm("analyze_size");
   AddParm("overscan");
   AddParm("edge_weighting");
+  AddParm("weight_limit");
   AddParm("darkness_limit");
   AddParm("analyze_rate");
   AddParm("hue_win_size");

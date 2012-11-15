@@ -151,6 +151,7 @@ dfatmoParmList = (
     ( 'i', 'overscan' ),
     ( 'i', 'darkness_limit' ),
     ( 'i', 'edge_weighting' ),
+    ( 'i', 'weight_limit' ),
     ( 'i', 'hue_win_size' ),
     ( 'i', 'sat_win_size' ),
     ( 'i', 'hue_threshold' ),

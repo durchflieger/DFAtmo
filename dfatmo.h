@@ -57,6 +57,7 @@ typedef struct {
   int overscan;
   int darkness_limit;
   int edge_weighting;
+  int weight_limit;
   int hue_win_size;
   int sat_win_size;
   int hue_threshold;
@@ -81,7 +82,7 @@ typedef struct {
 /*
  * abstraction for output drivers
  */
-#define DFATMO_OUTPUT_DRIVER_VERSION    2
+#define DFATMO_OUTPUT_DRIVER_VERSION    3
 
 typedef struct output_driver_s output_driver_t;
 struct output_driver_s {

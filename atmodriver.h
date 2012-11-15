@@ -71,9 +71,6 @@ typedef const char* lib_error_t;
 
 #include "dfatmo.h"
 
-/* Only pixel that are above the minimum weight limit are calculated.  12 -> ~5% */
-#define MIN_WEIGHT_LIMIT        12
-
 /* accuracy of color calculation */
 #define h_MAX   255
 #define s_MAX   255
@@ -104,7 +101,7 @@ typedef struct {
   rgb_color_t *analyzed_colors;
   int analyze_width, analyze_height;
   int img_size, alloc_img_size;
-  int edge_weighting;
+  int edge_weighting, weight_limit;
   hsv_color_t *hsv_img;
   int weight_tab_size;
   weight_tab_t *weight_tab, *weight_tab_end;
@@ -173,7 +170,7 @@ static inline void rgb_to_hsv(hsv_color_t *hsv, int r, int g, int b) {
 }
 
 
-#define insert_weight(_c_, _w_) { tmpw = (_w_); if (tmpw > MIN_WEIGHT_LIMIT) { wt->pos = pos; wt->channel = (_c_); wt->weight = tmpw; ++wt; }}
+#define insert_weight(_c_, _w_) { tmpw = (_w_); if (tmpw >= weight_limit) { wt->pos = pos; wt->channel = (_c_); wt->weight = tmpw; ++wt; }}
 
 static void calc_weight(atmo_driver_t *self) {
   int row, col, c;
@@ -183,6 +180,7 @@ static void calc_weight(atmo_driver_t *self) {
   const int width = self->analyze_width;
   const int height = self->analyze_height;
   const double w = self->edge_weighting > 10 ? (double)self->edge_weighting / 10.0: 1.0;
+  const int weight_limit = self->weight_limit;
   const int top_channels = self->active_parm.top;
   const int bottom_channels = self->active_parm.bottom;
   const int left_channels = self->active_parm.left;
@@ -579,6 +577,7 @@ static void calc_rgb_values(atmo_driver_t *self) {
 static int configure_analyze_size(atmo_driver_t *self, int width, int height) {
   int size = width * height;
   int edge_weighting = self->active_parm.edge_weighting;
+  int weight_limit = self->active_parm.weight_limit;
 
     /* allocate hsv and weight images */
   if (size > self->alloc_img_size) {
@@ -596,12 +595,14 @@ static int configure_analyze_size(atmo_driver_t *self, int width, int height) {
     self->analyze_width = 0;
     self->analyze_height = 0;
     self->edge_weighting = 0;
+    self->weight_limit = 0;
   }
   self->img_size = size;
 
     /* calculate weight image */
-  if (width != self->analyze_width || height != self->analyze_height || edge_weighting != self->edge_weighting) {
+  if (width != self->analyze_width || height != self->analyze_height || edge_weighting != self->edge_weighting || weight_limit != self->weight_limit) {
     self->edge_weighting = edge_weighting;
+    self->weight_limit = weight_limit;
     self->analyze_width = width;
     self->analyze_height = height;
     calc_weight(self);
@@ -1094,6 +1095,7 @@ static void instant_configure (atmo_driver_t *self) {
   self->active_parm.overscan = self->parm.overscan;
   self->active_parm.darkness_limit = self->parm.darkness_limit;
   self->active_parm.edge_weighting = self->parm.edge_weighting;
+  self->active_parm.weight_limit = self->parm.weight_limit;
   self->active_parm.hue_win_size = self->parm.hue_win_size;
   self->active_parm.sat_win_size = self->parm.sat_win_size;
   self->active_parm.hue_threshold = self->parm.hue_threshold;
@@ -1125,6 +1127,7 @@ static void init_configuration (atmo_driver_t *self)
   self->parm.brightness = 100;
   self->parm.darkness_limit = 1;
   self->parm.edge_weighting = 60;
+  self->parm.weight_limit = 12;
   self->parm.filter = FILTER_COMBINED;
   self->parm.filter_length = 500;
   self->parm.filter_smoothness = 50;
@@ -1172,6 +1175,7 @@ PARM_DESC_INT(analyze_size, analyze_size_enum, 0, 3, 0, trNOOP("Size of analyze 
 PARM_DESC_INT(overscan, NULL, 0, 200, 0, trNOOP("Ignored overscan border [%1000]")) \
 PARM_DESC_INT(darkness_limit, NULL, 0, 100, 0, trNOOP("Limit for black pixel")) \
 PARM_DESC_INT(edge_weighting, NULL, 10, 200, 0, trNOOP("Power of edge weighting")) \
+PARM_DESC_INT(weight_limit, NULL, 0, 255, 0, trNOOP("Limit for edge weighting")) \
 PARM_DESC_INT(hue_win_size, NULL, 0, 5, 0, trNOOP("Hue windowing size")) \
 PARM_DESC_INT(sat_win_size, NULL, 0, 5, 0, trNOOP("Saturation windowing size")) \
 PARM_DESC_INT(hue_threshold, NULL, 0, 100, 0, trNOOP("Hue threshold [%]")) \
