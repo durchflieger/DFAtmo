@@ -1,3 +1,7 @@
+--- Version 0.3.1
+Added new parameter "weight_limit"
+Fixed dynamic linking issue for recent gcc/linux versions
+
 --- Version 0.3.0
 Optimize performance of image analysis algorithm:
     1. By introducing a new weight table so that only calculation for pixel

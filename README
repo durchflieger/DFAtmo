@@ -320,6 +320,10 @@ edge_weighting *   60               Power of edge weighting.
                                     from the controller configuration data. Use the DF10CH setup program to configure your
                                     desired edge weighting.
 
+weight_limit *     12               Limit for edge weighting.
+                                    Pixel positions of the analyze image with a weight value below this limit are ignored.
+                                    Valid values 0 ... 255
+
 darkness_limit *   1                Minimum brightness of pixel. Values below are interpreted as black pixel.
                                     Used to detect and skip "black borders" in video.
                                     Valid values are 0 ... 100
@@ -566,6 +570,7 @@ Parameter             increases CPU load                   decreases CPU load   
 analyze_size               greater                              smaller                   high
 analyze rate               shorter                              longer                    high
 edge weighting             lower                                higher                    high
+weight_limit               lower                                higher                    moderate
 number of sections         more                                 less                      moderate
 windowing size (hue/sat)   bigger                               smaller                   moderate
 darkness_limit             lower                                higher                    small

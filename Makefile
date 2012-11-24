@@ -129,19 +129,19 @@ xineplug_post_dfatmo.o: xineplug_post_dfatmo.c atmodriver.h dfatmo.h
 	$(CC) $(CFLAGS_XINE) $(CFLAGS) -DOUTPUT_DRIVER_PATH='"$(DFATMOLIBDIR)/drivers"' -c -o $@ $<
 
 xineplug_post_dfatmo.so: xineplug_post_dfatmo.o
-	$(CC) $(CFLAGS_XINE) $(CFLAGS) $(LDFLAGS_SO) $(LIBS_XINE) -lm -ldl -o $@ $<
+	$(CC) $(CFLAGS_XINE) $(CFLAGS) $(LDFLAGS_SO) -o $@ $< $(LIBS_XINE) -lm -ldl
 
 atmodriver.o: atmodriver.c atmodriver.h dfatmo.h
 	$(CC) $(CFLAGS_PYTHON) $(CFLAGS) -DOUTPUT_DRIVER_PATH='"$(DFATMOLIBDIR)/drivers"' -c -o $@ $<
 
 $(ATMODRIVER): atmodriver.o
-	$(CC) $(CFLAGS_PYTHON) $(CFLAGS) $(LDFLAGS_SO) $(LIBS_PYTHON) -lm -ldl -o $@ $<
+	$(CC) $(CFLAGS_PYTHON) $(CFLAGS) $(LDFLAGS_SO) -o $@ $< $(LIBS_PYTHON) -lm -ldl
 
 dfatmo-df10ch.o: df10choutputdriver.c dfatmo.h df10ch_usb_proto.h
 	$(CC) $(CFLAGS_USB) $(CFLAGS) -c -o $@ $<
 
 dfatmo-df10ch.so: dfatmo-df10ch.o
-	$(CC) $(CFLAGS_USB) $(CFLAGS) $(LDFLAGS_SO) $(LIBS_USB) -lm -o $@ $<
+	$(CC) $(CFLAGS_USB) $(CFLAGS) $(LDFLAGS_SO) -o $@ $< $(LIBS_USB) -lm
 
 dfatmo-file.o: fileoutputdriver.c dfatmo.h
 	$(CC) $(CFLAGS) -c -o $@ $<
