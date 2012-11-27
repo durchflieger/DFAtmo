@@ -53,7 +53,7 @@
 #define DF10CH_USB_DEFAULT_TIMEOUT   100
 
 #define DF10CH_MAX_CHANNELS     30
-#define DF10CH_SIZE_CONFIG      (17 + DF10CH_MAX_CHANNELS * 6)
+#define DF10CH_SIZE_CONFIG      (18 + DF10CH_MAX_CHANNELS * 6)
 #define DF10CH_CONFIG_VALID_ID  0xA0A1
 
 enum { DF10CH_AREA_TOP, DF10CH_AREA_BOTTOM, DF10CH_AREA_LEFT, DF10CH_AREA_RIGHT, DF10CH_AREA_CENTER, DF10CH_AREA_TOP_LEFT, DF10CH_AREA_TOP_RIGHT, DF10CH_AREA_BOTTOM_LEFT, DF10CH_AREA_BOTTOM_RIGHT };
@@ -508,6 +508,8 @@ static int df10ch_driver_open(output_driver_t *this_gen, atmo_parameters_t *para
       param->overscan = eedata[eei];
       param->analyze_size = eedata[eei + 1];
       param->edge_weighting = eedata[eei + 2];
+      if (ctrl->config_version > 2)
+        param->weight_limit = eedata[eei + 3];
     }
 
       // Read PWM resolution
@@ -599,6 +601,8 @@ static int df10ch_driver_configure(output_driver_t *this_gen, atmo_parameters_t 
     param->overscan = this->param.overscan;
     param->analyze_size = this->param.analyze_size;
     param->edge_weighting = this->param.edge_weighting;
+    if (this->config_version > 2)
+      param->weight_limit = this->param.weight_limit;
   }
 
   this->param = *param;
