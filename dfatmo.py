@@ -76,13 +76,6 @@ def displayNotificationAndLog(level, msg):
     displayNotification(level, msg)
 
 
-if ( __name__ == "__main__" ):
-    if xbmcgui.getCurrentWindowId() == 10000:
-        if addon.getSetting('enabled') != 'true':
-            log(LOG_INFO, "Automatic launch of addon not enabled")
-            sys.exit(0)
-
-
 try:
     if xbmc.CAPTURE_STATE_DONE:
         pass
