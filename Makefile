@@ -31,7 +31,7 @@ XBMCADDONDIR ?= $(HOME)/.xbmc/addons/script.dfatmo
 
 XBMCADDON = dfatmo-xbmc-addon.zip
 XBMCADDONWIN = dfatmo-xbmc-addon-win.zip
-XBMCADDONFILES = dfatmo.py addon.xml settings.xml mydriver.py icon.png
+XBMCADDONFILES = dfatmo.py service.py addon.xml settings.xml mydriver.py icon.png
 
 OUTPUTDRIVERS = dfatmo-file.so dfatmo-serial.so
 
@@ -76,7 +76,7 @@ xineplugin: $(XINEPOSTATMO)
 
 xbmcaddon: $(XBMCADDON)
 
-xbmcaddonwin: $(XBMCADDONWIN)
+xbmcaddonwin:: $(XBMCADDONWIN)
 
 dfatmo: $(ATMODRIVER) $(OUTPUTDRIVERS)
 
@@ -87,7 +87,7 @@ xineinstall: xineplugin
 
 xbmcinstall:
 	$(INSTALL) -m 0755 -d $(XBMCADDONDIR)
-	$(INSTALL) -m 0644 -t $(XBMCADDONDIR) addon.xml dfatmo.py icon.png
+	$(INSTALL) -m 0644 -t $(XBMCADDONDIR) addon.xml dfatmo.py service.py icon.png
 	$(INSTALL) -m 0644 HISTORY $(XBMCADDONDIR)/changelog.txt
 	$(INSTALL) -m 0644 COPYING $(XBMCADDONDIR)/LICENSE.txt
 	$(INSTALL) -m 0755 -d $(XBMCADDONDIR)/resources

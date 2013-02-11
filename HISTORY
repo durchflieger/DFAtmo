@@ -1,3 +1,7 @@
+--- Version 0.3.2 of XBMC addon
+    Added support for XBMC V13 git revision past Feb. 10 2013
+    Note: Within XBMC V12.0 Frodo stable the DFAtmo support is brocken!!!
+
 --- Version 0.3.1
 Added new parameter "weight_limit"
 Fixed dynamic linking issue for recent gcc/linux versions

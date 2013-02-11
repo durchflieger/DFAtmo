@@ -51,6 +51,13 @@ For more detailed informations about "Atmolight" visit the VDR-Wiki:
   http://www.vdr-wiki.de/wiki/index.php/Atmo-plugin
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Within XBMC V12.0 Frodo stable the DFAtmo support is brocken!!!
+DFAtmo runs fine with stable XBMC V11.0 Eden and with a recent
+git version after Feb. 10 2013.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 Components of DFAtmo:
 ---------------------
 
