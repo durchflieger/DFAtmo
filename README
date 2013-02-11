@@ -244,6 +244,12 @@ Alternatively you can control these settings with the following hot keys:
 @dfatmo yellow -> increase brightness by 10
 @dfatmo blue   -> decrease brightness by 10
 
+You can control the plugin with the following SVDRP commands:
+
+enabled yes    -> switch Atmolight on
+enabled no     -> switch Atmolight off
+enabled        -> return current enabled status (YES or NO)
+
 
 Parameters understood by DFAtmo:
 --------------------------------

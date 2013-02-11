@@ -2,6 +2,7 @@
     Added support for XBMC V13 git revision past Feb. 10 2013
     Note: Within XBMC V12.0 Frodo stable the DFAtmo support is brocken!!!
     Added untested Makefile 'vdr2plug.mk' to build plugin for recent vdr versions
+    Added SVDRP command to vdr plugin to enable/disable plugin
 
 --- Version 0.3.1
 Added new parameter "weight_limit"

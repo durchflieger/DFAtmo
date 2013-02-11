@@ -110,7 +110,7 @@ static int GetOutputDriverType(const char *Name)
 } // extern "C"
 
 
-static const char *VERSION        = "0.3.1";
+static const char *VERSION        = "0.3.2";
 static const char *DESCRIPTION    = trNOOP("The driver for 'Atmolight' controllers");
 static const char *MAINMENUENTRY  = "DFAtmo";
 
@@ -947,12 +947,41 @@ bool cDFAtmoPlugin::Service(const char *Id, void *Data)
 const char **cDFAtmoPlugin::SVDRPHelpPages(void)
 {
   // Return help text for SVDRP commands this plugin implements
-  return NULL;
+  static const char *HelpPages[] = {
+    "ENABLED [ YES|NO ]\n"
+    "    Enable/Disable plugin.\n"
+    "    Without option argument the current enabled status is returned.",
+    NULL
+    };
+  return HelpPages;
 }
 
 cString cDFAtmoPlugin::SVDRPCommand(const char *Command, const char *Option, int &ReplyCode)
 {
-  // Process SVDRP commands this plugin implements
+  if (!strcasecmp(Command, "ENABLED"))
+  {
+    if (*Option)
+    {
+      int enabled;
+      if (!strcasecmp(Option, "YES"))
+        enabled = true;
+      else if (!strcasecmp(Option, "NO"))
+        enabled = false;
+      else
+      {
+        ReplyCode = 504;
+        return cString::sprintf("Unknown option: \"%s\"", Option);
+      }
+      if (enabled != ad.active_parm.enabled)
+      {
+        atmo_parameters_t save = ad.parm;
+        ad.parm.enabled = enabled;
+        InstantConfigure();
+        ad.parm = save;
+      }
+    }
+    return (ad.active_parm.enabled ? cString::sprintf("YES"): cString::sprintf("NO"));
+  }
   return NULL;
 }
 
