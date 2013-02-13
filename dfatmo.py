@@ -550,7 +550,7 @@ class CaptureThread(threading.Thread):
         if videoPlaying:
             ot.stop()
             ot = None
-            log(LOG_INFO, "average capture interval: %.3f" % format((time.time() - videoStartTime) / captureCount))
+            log(LOG_INFO, "average capture interval: %.3f" % ((time.time() - videoStartTime) / captureCount))
 
         displayNotificationAndLog(LOG_INFO, "Service stopped")
 
