@@ -25,92 +25,34 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-CFLAGS+=-O3 -fPIC
+include /usr/share/cdbs/1/rules/debhelper.mk
 
-ifneq (NO, $(shell pkg-config --atleast-version=1.1.90 libxine || echo NO))
-XINEPLUGINDIR = $(shell pkg-config --variable=plugindir libxine)
-endif
+DEB_INSTALL_CHANGELOGS_ALL = HISTORY
+DEB_INSTALL_DOCS_ALL = README COPYING
 
-# Test for vdr-dev package
+COMMON_MAKE_OPTIONS = OUTPUTDRIVERPATH=/usr/lib/dfatmo/drivers
+
+ifeq (NO, $(shell pkg-config --exists vdr || echo NO))
 ifneq (NO, $(shell [ -f /usr/include/vdr/Make.global ] || echo NO))
-VDRPLUG_MAKE_FLAGS = -f vdrplug.mk DFATMOINSTDIR="/usr" DVBDIR=/usr VDRDIR=/usr/include/vdr LIBDIR=. LOCALEDIR=debian/tmp/usr/share/locale
+HAVE_VDR_WITHOUT_PKG_CONFIG=1
+endif
 endif
 
-
-configure: configure-stamp
-configure-stamp:
-	dh_testdir
-	# Add here commands to configure the package.
-	touch configure-stamp
-
-
-build: build-stamp
-
-build-stamp: configure-stamp  
-	dh_testdir
-	# Add here commands to compile the package.
-	$(MAKE) DFATMOINSTDIR="/usr"
-ifdef XINEPLUGINDIR
-	echo "xineplug_post_dfatmo.so $(XINEPLUGINDIR)/post/" > debian/libxine-dfatmo-plugin.install
+common-build-arch::
+	$(MAKE) all $(COMMON_MAKE_OPTIONS)
+ifdef HAVE_VDR_WITHOUT_PKG_CONFIG
+	$(MAKE) -f vdrplug.mk all $(COMMON_MAKE_OPTIONS) DVBDIR=/usr VDRDIR=/usr/include/vdr
 endif
-ifdef VDRPLUG_MAKE_FLAGS
-	$(MAKE) $(VDRPLUG_MAKE_FLAGS) install
+
+common-install-arch::
+	$(MAKE) install $(COMMON_MAKE_OPTIONS) DFATMOINSTDIR=debian/dfatmo/usr XINEDESTDIR=debian/libxine-dfatmo-plugin VDRDESTDIR=debian/vdr-plugin-dfatmo
+ifdef HAVE_VDR_WITHOUT_PKG_CONFIG
+	$(MAKE) -f vdrplug.mk install DVBDIR=/usr VDRDIR=/usr/include/vdr LIBDIR=debian/vdr-plugin-dfatmo/usr/lib/vdr/plugins LOCALEDIR=debian/vdr-plugin-dfatmo/usr/share/locale
 endif
-	touch $@
 
-clean: 
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp configure-stamp
-	# Add here commands to clean up after the build process.
-	$(MAKE) clean
-ifdef VDRPLUG_MAKE_FLAGS
-	$(MAKE) $(VDRPLUG_MAKE_FLAGS) clean
+cleanbuilddir::
+	$(MAKE) clean $(COMMON_MAKE_OPTIONS)
+ifdef HAVE_VDR_WITHOUT_PKG_CONFIG
+	$(MAKE) -f vdrplug.mk clean $(COMMON_MAKE_OPTIONS) DVBDIR=/usr VDRDIR=/usr/include/vdr
 endif
-	dh_clean 
-	rm -f debian/libxine-dfatmo-plugin.install
 
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep  
-	dh_installdirs
-	# Add here commands to install the package.
-
-# Build architecture-independent files here.
-binary-indep: install
-# We have nothing to do by default.
-
-# Build architecture-dependent files here.
-binary-arch: install
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs 
-	dh_installdocs
-	dh_installexamples
-	dh_install
-#	dh_installmenu
-#	dh_installdebconf
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installpam
-#	dh_installmime
-#	dh_python
-#	dh_installinit
-#	dh_installcron
-#	dh_installinfo
-	dh_installman
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-#	dh_perl
-#	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install configure

@@ -2,7 +2,7 @@ Source: dfatmo
 Section: libs
 Priority: extra
 Maintainer: Andreas Auras <yak54@inkennet.de>
-Build-Depends: debhelper (>= 7), pkg-config, zip, libusb-1.0-0-dev, python-dev, libxine2-dev, vdr-dev
+Build-Depends: debhelper (>= 7), cdbs, pkg-config, zip, libusb-1.0-0-dev, python-dev, libxine2-dev, vdr-dev
 Standards-Version: 3.8.3
 
 Package: dfatmo

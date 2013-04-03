@@ -37,6 +37,7 @@ PLGCFG = $(call PKGCFG,plgcfg)
 TMPDIR ?= /tmp
 DFATMOINSTDIR ?= /usr/local
 DFATMOLIBDIR ?= $(DFATMOINSTDIR)/lib/dfatmo
+OUTPUTDRIVERPATH ?= $(DFATMOLIBDIR)/drivers
 
 ### The compiler options:
 
@@ -64,7 +65,7 @@ SOFILE = libvdr-$(PLUGIN).so
 
 INCLUDES +=
 
-DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DOUTPUT_DRIVER_PATH='"$(DFATMOLIBDIR)/drivers"'
+DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DOUTPUT_DRIVER_PATH='"$(OUTPUTDRIVERPATH)"'
 
 ### The object files (add further files here):
 
@@ -84,13 +85,13 @@ all: $(SOFILE) i18n
 MAKEDEP = $(CXX) -MM -MG
 DEPFILE = .dependencies
 $(DEPFILE): Makefile
-	@$(MAKEDEP) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.cpp) > $@
+	$(MAKEDEP) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.cpp) > $@
 
 -include $(DEPFILE)
 
 ### Internationalization (I18N):
 
-PODIR     = po
+PODIR     = vdrplug.po
 I18Npo    = $(wildcard $(PODIR)/*.po)
 I18Nmo    = $(addsuffix .mo, $(foreach file, $(I18Npo), $(basename $(file))))
 I18Nmsgs  = $(addprefix $(DESTDIR)$(LOCDIR)/, $(addsuffix /LC_MESSAGES/vdr-$(PLUGIN).mo, $(notdir $(foreach file, $(I18Npo), $(basename $(file))))))
@@ -104,7 +105,7 @@ $(I18Npot): $(OBJS:%.o=%.cpp) atmodriver.h
 
 %.po: $(I18Npot)
 	msgmerge -U --no-wrap --no-location --backup=none -q -N $@ $<
-	@touch $@
+	touch $@
 
 $(I18Nmsgs): $(DESTDIR)$(LOCDIR)/%/LC_MESSAGES/vdr-$(PLUGIN).mo: $(PODIR)/%.mo
 	install -D -m644 $< $@
@@ -125,13 +126,13 @@ install-lib: $(SOFILE)
 install: install-lib install-i18n
 
 dist: $(I18Npo) clean
-	@-rm -rf $(TMPDIR)/$(ARCHIVE)
-	@mkdir $(TMPDIR)/$(ARCHIVE)
-	@cp -a * $(TMPDIR)/$(ARCHIVE)
-	@tar czf $(PACKAGE).tgz -C $(TMPDIR) $(ARCHIVE)
-	@-rm -rf $(TMPDIR)/$(ARCHIVE)
+	-rm -rf $(TMPDIR)/$(ARCHIVE)
+	mkdir $(TMPDIR)/$(ARCHIVE)
+	cp -a * $(TMPDIR)/$(ARCHIVE)
+	tar czf $(PACKAGE).tgz -C $(TMPDIR) --exclude debian --exclude CVS --exclude .svn --exclude .hg --exclude .git $(ARCHIVE)
+	-rm -rf $(TMPDIR)/$(ARCHIVE)
 	@echo Distribution package created as $(PACKAGE).tgz
 
 clean:
-	@-rm -f $(PODIR)/*.mo $(PODIR)/*.pot
-	@-rm -f $(OBJS) $(DEPFILE) *.so *.tgz core* *~
+	-rm -f $(PODIR)/*.mo $(PODIR)/*.pot
+	-rm -f $(OBJS) $(DEPFILE) *.so *.tgz core* *~

@@ -1,3 +1,6 @@
+--- Version 0.3.4
+Added support for vdr 2.x
+
 --- Version 0.3.3
 Fixed script error when stopping service while video is running in XBMC addon
 

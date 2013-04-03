@@ -53,8 +53,8 @@ For more detailed informations about "Atmolight" visit the VDR-Wiki:
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Within XBMC V12.0 Frodo stable the DFAtmo support is brocken!!!
-DFAtmo runs fine with stable XBMC V11.0 Eden and with a recent
-git version after Feb. 10 2013.
+DFAtmo runs fine with stable XBMC V11.0 Eden, V12.1 Frodo
+and with a recent git version after Feb. 10 2013.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -148,10 +148,16 @@ Compiling and installation of the plugin:
 
 For building the DFAtmo VDR plugin you need a recent VDR release >= 1.7
 
-Compiling and installation of the VDR plugin:
+Compiling and installation of the VDR plugin for VDR 2.x versions with
+pkg-config support:
+  make vdrplugin
+  make vdrinstall
+  
+Compiling and installation of the VDR plugin for older VDR versions without
+pkg-config support:
   make -f vdrplug.mk all
   make -f vdrplug.mk install
-  
+
   
 For ubuntu there exists a debian package build you can use to build all components
 in one step with:

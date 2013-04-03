@@ -39,6 +39,7 @@ LIBDIR ?= ../../lib
 TMPDIR ?= /tmp
 DFATMOINSTDIR ?= /usr/local
 DFATMOLIBDIR ?= $(DFATMOINSTDIR)/lib/dfatmo
+OUTPUTDRIVERPATH ?= $(DFATMOLIBDIR)/drivers
 
 ### Make sure that necessary options are included:
 
@@ -61,7 +62,7 @@ PACKAGE = vdr-$(ARCHIVE)
 
 INCLUDES += -I$(VDRDIR)/include
 
-DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DOUTPUT_DRIVER_PATH='"$(DFATMOLIBDIR)/drivers"'
+DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DOUTPUT_DRIVER_PATH='"$(OUTPUTDRIVERPATH)"'
 
 ### The object files (add further files here):
 
@@ -81,6 +82,7 @@ I18Npot   = $(PODIR)/$(PLUGIN).pot
 all: libvdr-$(PLUGIN).so $(I18Npot)
 
 install: all $(I18Nmsgs)
+	mkdir -p $(LIBDIR)
 	cp libvdr-$(PLUGIN).so $(LIBDIR)/libvdr-$(PLUGIN).so.$(APIVERSION)
 
 clean:
