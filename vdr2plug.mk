@@ -41,8 +41,8 @@ OUTPUTDRIVERPATH ?= $(DFATMOLIBDIR)/drivers
 
 ### The compiler options:
 
-export CFLAGS   = $(call PKGCFG,cflags)
-export CXXFLAGS = $(call PKGCFG,cxxflags)
+CFLAGS_VDR   = $(call PKGCFG,cflags)
+CXXFLAGS_VDR = $(call PKGCFG,cxxflags)
 
 ### The version number of VDR's plugin API:
 
@@ -78,14 +78,14 @@ all: $(SOFILE) i18n
 ### Implicit rules:
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CXXFLAGS_VDR) -c $(DEFINES) $(INCLUDES) -o $@ $<
 
 ### Dependencies:
 
 MAKEDEP = $(CXX) -MM -MG
 DEPFILE = .dependencies
 $(DEPFILE): Makefile
-	$(MAKEDEP) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.cpp) > $@
+	$(MAKEDEP) $(CXXFLAGS) $(CXXFLAGS_VDR) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.cpp) > $@
 
 -include $(DEPFILE)
 
@@ -118,7 +118,7 @@ install-i18n: $(I18Nmsgs)
 ### Targets:
 
 $(SOFILE): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(CXXFLAGS_VDR) -shared $(OBJS) -o $@ -lm -ldl
 
 install-lib: $(SOFILE)
 	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)

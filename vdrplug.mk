@@ -91,7 +91,7 @@ clean:
 ### Dependencies:
 
 libvdr-$(PLUGIN).so: $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) -o $@ -ldl -lm
 
 $(OBJS): dfatmo.h atmodriver.h
 

@@ -44,8 +44,8 @@ XINEPOSTATMO = xineplug_post_dfatmo.so
 STD_BUILD_TARGETS = dfatmo
 STD_INSTALL_TARGETS = dfatmoinstall
 
-CFLAGS ?= -O3 -pipe -Wall -fPIC -g
-LDFLAGS_SO ?= -shared -fvisibility=hidden
+CFLAGS_DFATMO = -O3 -pipe -Wall -fPIC -g
+LDFLAGS_SO = -shared -fvisibility=hidden
 
 ifneq (NO, $(shell pkg-config --exists libusb-1.0 || echo NO))
 HAVE_LIBUSB=1
@@ -58,7 +58,7 @@ ifneq (NO, $(shell bash -c "type -p python-config || echo NO"))
 HAVE_PYTHON=1
 ATMODRIVER = atmodriver.so $(XBMCADDON)
 CFLAGS_PYTHON ?= $(shell python-config --cflags)
-LIBS_PYTHON ?= $(shell python-config --libs)
+LDFLAGS_PYTHON ?= $(shell python-config --ldflags)
 endif
 
 ifneq (NO, $(shell pkg-config --atleast-version=1.1.90 libxine || echo NO))
@@ -142,28 +142,28 @@ $(XBMCADDONWIN): $(XBMCADDONFILES) README project/release/atmodriver.pyd project
 	(cd ./build && zip -r ../$@ script.dfatmo)
 
 xineplug_post_dfatmo.o: xineplug_post_dfatmo.c atmodriver.h dfatmo.h
-	$(CC) $(CFLAGS_XINE) $(CFLAGS) -DOUTPUT_DRIVER_PATH='"$(OUTPUTDRIVERPATH)"' -c -o $@ $<
+	$(CC) $(CFLAGS) $(CFLAGS_XINE) $(CFLAGS_DFATMO) -DOUTPUT_DRIVER_PATH='"$(OUTPUTDRIVERPATH)"' -c -o $@ $<
 
 xineplug_post_dfatmo.so: xineplug_post_dfatmo.o
-	$(CC) $(CFLAGS_XINE) $(CFLAGS) $(LDFLAGS_SO) -o $@ $< $(LIBS_XINE) -lm -ldl
+	$(CC) $(CFLAGS) $(LDFLAGS) $(CFLAGS_XINE) $(CFLAGS_DFATMO) $(LDFLAGS_SO) -o $@ $< $(LIBS_XINE) -lm -ldl
 
 atmodriver.o: atmodriver.c atmodriver.h dfatmo.h
-	$(CC) $(CFLAGS_PYTHON) $(CFLAGS) -DOUTPUT_DRIVER_PATH='"$(OUTPUTDRIVERPATH)"' -c -o $@ $<
+	$(CC) $(CFLAGS_PYTHON) $(CFLAGS_DFATMO) -DOUTPUT_DRIVER_PATH='"$(OUTPUTDRIVERPATH)"' -c -o $@ $<
 
 atmodriver.so: atmodriver.o
-	$(CC) $(CFLAGS_PYTHON) $(CFLAGS) $(LDFLAGS_SO) -o $@ $< $(LIBS_PYTHON) -lm -ldl
+	$(CC) $(CFLAGS_PYTHON) $(LDFLAGS_PYTHON) $(CFLAGS_DFATMO) $(LDFLAGS_SO) -lm -ldl -o $@ $<
 
 dfatmo-df10ch.o: df10choutputdriver.c dfatmo.h df10ch_usb_proto.h
-	$(CC) $(CFLAGS_USB) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(CFLAGS_USB) $(CFLAGS_DFATMO) -c -o $@ $<
 
 dfatmo-df10ch.so: dfatmo-df10ch.o
-	$(CC) $(CFLAGS_USB) $(CFLAGS) $(LDFLAGS_SO) -o $@ $< $(LIBS_USB) -lm
+	$(CC) $(CFLAGS) $(LDFLAGS) $(CFLAGS_USB) $(CFLAGS_DFATMO) $(LDFLAGS_SO) -o $@ $< $(LIBS_USB) -lm
 
 dfatmo-file.o: fileoutputdriver.c dfatmo.h
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(CFLAGS_DFATMO) -c -o $@ $<
 
 dfatmo-serial.o: serialoutputdriver.c dfatmo.h
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(CFLAGS_DFATMO) -c -o $@ $<
 
 %.so: %.o
-	$(CC) $(CFLAGS) $(LDFLAGS_SO) -o $@ $<
+	$(CC) $(CFLAGS) $(LDFLAGS) $(CFLAGS_DFATMO) $(LDFLAGS_SO) -o $@ $<
