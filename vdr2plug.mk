@@ -101,6 +101,7 @@ I18Npot   = $(PODIR)/$(PLUGIN).pot
 	msgfmt -c -o $@ $<
 
 $(I18Npot): $(OBJS:%.o=%.cpp) atmodriver.h
+	mkdir -p $(PODIR)
 	xgettext -C -cTRANSLATORS --no-wrap --no-location -k -ktr -ktrNOOP --package-name=vdr-$(PLUGIN) --package-version=$(VERSION) --msgid-bugs-address='yak54@inkennet.de' -o $@ `ls $^`
 
 %.po: $(I18Npot)
