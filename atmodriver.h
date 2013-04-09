@@ -124,6 +124,7 @@ typedef struct {
   output_driver_t *output_driver;
   int driver_opened;
   rgb_color_t *output_colors, *last_output_colors;
+  int elapsed_time_last_output;
 
 } atmo_driver_t;
 
@@ -820,7 +821,14 @@ static int send_output_colors (atmo_driver_t *self, rgb_color_t *output_colors, 
   int colors_size = self->sum_channels * sizeof(rgb_color_t);
   int rc = 0;
 
+  if (!initial) {
+    self->elapsed_time_last_output += self->active_parm.output_rate;
+    if (self->elapsed_time_last_output > 500)   // FIXME: Should be a configurable parameter [ms]!
+      initial = 1;
+  }
+
   if (initial || memcmp(output_colors, self->last_output_colors, colors_size)) {
+    self->elapsed_time_last_output = 0;
     rc = self->output_driver->output_colors(self->output_driver, output_colors, initial ? NULL: self->last_output_colors);
     if (rc)
       DFATMO_LOG(DFLOG_ERROR, "output driver error: %s", self->output_driver->errmsg);
