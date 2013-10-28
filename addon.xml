@@ -2,7 +2,7 @@
 <addon
 	id="script.dfatmo"
 	name="DFAtmo"
-	version="0.3.3"
+	version="0.3.5"
 	provider-name="durchflieger"
 	>
 	<requires>

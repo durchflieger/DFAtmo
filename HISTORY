@@ -1,3 +1,7 @@
+--- Version 0.3.5
+Send color output data at least every 500ms to trigger atmo controller idle watchdog
+Added support for xbmc v13
+
 --- Version 0.3.4
 Added support for vdr 2.x
 
