@@ -1,6 +1,7 @@
 --- Version 0.4.0
 Changed behaviour of parameter uniform_brightness and calculation of uniform brightness
 to be more compatible to "classic" VDR Atmolight plugin.
+VDR plugin: Do send black color output only once when suspended.
 
 --- Version 0.3.5
 Send color output data at least every 500ms to trigger atmo controller idle watchdog

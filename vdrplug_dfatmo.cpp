@@ -441,8 +441,11 @@ void cDFAtmoOutputThread::Action(void)
         reset_filters(ad);
       }
       else
+      {
         DFATMO_LOG(DFLOG_INFO, "output thread entered suspend mode. average loop time is %d ms", (int)((cTimeMs::Now() - startTime) / n));
-
+        if (turn_lights_off(ad))
+          break;
+      }
       suspended = !suspended;
     }
 
@@ -455,12 +458,7 @@ void cDFAtmoOutputThread::Action(void)
     }
     outputTime = actTime + ((suspended && ad->active_parm.start_delay > ad->active_parm.output_rate) ? ad->active_parm.start_delay: ad->active_parm.output_rate);
 
-    if (suspended)
-    {
-      if (turn_lights_off(ad))
-        break;
-    }
-    else
+    if (!suspended)
     {
       {
         cThreadLock lock(&plugin->grabThread);

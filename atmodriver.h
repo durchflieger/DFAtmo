@@ -841,6 +841,7 @@ static int send_output_colors (atmo_driver_t *self, rgb_color_t *output_colors, 
 
 
 static int turn_lights_off (atmo_driver_t *self) {
+  self->elapsed_time_last_output = 0;
   memset(self->output_colors, 0, (self->sum_channels * sizeof(rgb_color_t)));
   return send_output_colors(self, self->output_colors, 0);
 }
