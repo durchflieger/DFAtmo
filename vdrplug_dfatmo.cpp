@@ -110,7 +110,7 @@ static int GetOutputDriverType(const char *Name)
 } // extern "C"
 
 
-static const char *VERSION        = "0.3.2";
+static const char *VERSION        = "0.4.0";
 static const char *DESCRIPTION    = trNOOP("The driver for 'Atmolight' controllers");
 static const char *MAINMENUENTRY  = "DFAtmo";
 

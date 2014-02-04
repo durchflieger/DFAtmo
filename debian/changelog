@@ -1,9 +1,15 @@
+dfatmo (0.4-0) precise; urgency=low
+
+  * New upstream version
+
+ -- Andreas Auras <yak54@inkennet.de>  Tue, 04 Feb 2014 22:04:00 +0100
+
 dfatmo (0.3-4) precise; urgency=low
 
   * Added support for vdr 2.0.0
   * Migrate debian/rules to cdbs
 
- -- Andreas Auras <andy@media>  Tue, 02 Apr 2013 19:39:47 +0200
+ -- Andreas Auras <yak54@inkennet.de>  Tue, 02 Apr 2013 19:39:47 +0200
 
 dfatmo (0.3-3) precise; urgency=low
 

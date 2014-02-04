@@ -148,7 +148,7 @@ dfatmoParmList = (
     ( 'i', 'hue_win_size' ),
     ( 'i', 'sat_win_size' ),
     ( 'i', 'hue_threshold' ),
-    ( 'b', 'uniform_brightness' ),
+    ( 'i', 'uniform_brightness' ),
     ( 'i', 'brightness' ),
     ( 'i', 'filter' ),
     ( 'i', 'filter_smoothness' ),
@@ -299,7 +299,12 @@ class CaptureThread(threading.Thread):
                 else:
                     v = 0
             elif type == 'i':
-                v = int(v)
+                if v == 'true':
+                    v = 1
+                elif v == 'false':
+                    v = 0
+                else:
+                    v = int(v)
             else:
                 v = v.strip()
 

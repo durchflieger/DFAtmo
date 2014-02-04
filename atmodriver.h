@@ -483,7 +483,7 @@ static void calc_average_brightness(atmo_driver_t *self) {
 static void calc_uniform_average_brightness(atmo_driver_t *self) {
   hsv_color_t *hsv = self->hsv_img;
   int img_size = self->img_size;
-  const int darkness_limit = self->active_parm.darkness_limit;
+  const int darkness_limit = self->active_parm.darkness_limit * self->active_parm.uniform_brightness;
   uint64_t avg = 0;
   int cnt = 0;
   uint64_t * const avg_bright = self->avg_bright;
@@ -1188,7 +1188,7 @@ PARM_DESC_INT(hue_win_size, NULL, 0, 5, 0, trNOOP("Hue windowing size")) \
 PARM_DESC_INT(sat_win_size, NULL, 0, 5, 0, trNOOP("Saturation windowing size")) \
 PARM_DESC_INT(hue_threshold, NULL, 0, 100, 0, trNOOP("Hue threshold [%]")) \
 PARM_DESC_INT(brightness, NULL, 50, 300, 0, trNOOP("Brightness [%]")) \
-PARM_DESC_BOOL(uniform_brightness, NULL, 0, 1, 0, trNOOP("Uniform brightness mode")) \
+PARM_DESC_INT(uniform_brightness, NULL, 0, 255, 0, trNOOP("Uniform brightness limit factor")) \
 PARM_DESC_INT(filter, filter_enum, 0, (NUM_FILTERS-1), 0, trNOOP("Filter mode")) \
 PARM_DESC_INT(filter_smoothness, NULL, 1, 100, 0, trNOOP("Filter smoothness [%]")) \
 PARM_DESC_INT(filter_length, NULL, 300, 5000, 0, trNOOP("Filter length [ms]")) \

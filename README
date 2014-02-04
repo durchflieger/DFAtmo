@@ -362,10 +362,13 @@ brightness  *      100              Controls brightness of generated color value
                                     parameter because you will lose lesser or no PWM resolution.
 
 uniform_brightness * 0              Enable/Disable uniform brightness calculation.
-                                    Valid values: 0 (disable), 1 (enable)
+                                    Valid values: 0 (disabled), 1 ... 255 (enabled)
                                     When enabled only one uniform average brightness value is calculated
-                                    for all sections. This is the behavior of the "classic"
-                                    VDR Atmolight plugin.
+                                    for all sections. This is the behavior of the "classic" VDR Atmolight plugin.
+                                    For calculating the average value only bright pixels are taken into consideration 
+                                    which have a brightness value greater or equal than (darkness_limit * uniform_brightness).
+                                    The "classic" VDR Atmolight plugin used a fixed uniform_brightness value of 10 and
+                                    a standard darkness_limit of 5.
                                     When disabled a average brightness value is calculated for each
                                     section. This mode is more suitable when many sections for a area exists.   
                                     

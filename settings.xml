@@ -20,7 +20,7 @@
 	</category>
 	
 	<category label="Analysis">
-		<setting id="uniform_brightness" label="Uniform brightness mode" type="bool" default="false"/>
+		<setting id="uniform_brightness" label="Uniform brightness limit factor" type="number" default="0"/>
 		<setting id="analyze_size" label="Size of analyze image" type="enum" values="64|128|192|256" default="1"/>
 		<setting id="overscan" label="Ignored overscan border [%1000]" type="number" default="0"/>
 		<setting id="edge_weighting" label="Power of edge weighting" type="number" default="60"/>
