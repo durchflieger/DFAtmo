@@ -35,6 +35,7 @@ XBMCDESTDIR ?= $(HOME)/.xbmc/addons/script.dfatmo
 
 XBMCADDON = build/dfatmo-xbmc-addon.zip
 XBMCADDONWIN = windows/dfatmo-xbmc-addon-win.zip
+XBMCFRODOADDONWIN = windows/dfatmo-xbmc-frodo-addon-win.zip
 XBMCADDONFILES = dfatmo.py service.py addon.xml settings.xml mydriver.py icon.png
 
 OUTPUTDRIVERS = dfatmo-file.so dfatmo-serial.so
@@ -76,7 +77,7 @@ STD_BUILD_TARGETS += vdrplugin
 STD_INSTALL_TARGETS += vdrinstall
 endif
 
-.PHONY: all xineplugin xbmcaddon xbmcaddonwin dfatmo vdrplugin install xineinstall xbmcinstall dfatmoinstall vdrinstall clean
+.PHONY: all xineplugin xbmcaddon xbmcaddonwin xbmcfrodoaddonwin dfatmo vdrplugin install xineinstall xbmcinstall dfatmoinstall vdrinstall clean
 
 all: $(STD_BUILD_TARGETS)
 
@@ -85,6 +86,8 @@ xineplugin: $(XINEPOSTATMO)
 xbmcaddon: $(XBMCADDON)
 
 xbmcaddonwin: $(XBMCADDONWIN)
+
+xbmcfrodoaddonwin: $(XBMCFRODOADDONWIN)
 
 dfatmo: $(ATMODRIVER) $(OUTPUTDRIVERS)
 
@@ -101,10 +104,17 @@ xbmcinstall:
 	$(INSTALL) -m 0644 -t $(XBMCDESTDIR) addon.xml dfatmo.py service.py icon.png
 	$(INSTALL) -m 0644 HISTORY $(XBMCDESTDIR)/changelog.txt
 	$(INSTALL) -m 0644 COPYING $(XBMCDESTDIR)/LICENSE.txt
+	$(INSTALL) -m 0644 README $(XBMCDESTDIR)/readme.txt
 	$(INSTALL) -m 0755 -d $(XBMCDESTDIR)/resources
 	$(INSTALL) -m 0644 -t $(XBMCDESTDIR)/resources settings.xml
 	$(INSTALL) -m 0755 -d $(XBMCDESTDIR)/resources/lib/drivers
 	$(INSTALL) -m 0644 -t $(XBMCDESTDIR)/resources/lib/drivers mydriver.py
+
+winxbmcinstall: xbmcinstall
+	$(INSTALL) -m 0755 -d $(XBMCDESTDIR)/resources/lib.nt
+	$(INSTALL) -m 0644 -t $(XBMCDESTDIR)/resources/lib.nt project/release/atmodriver.pyd
+	$(INSTALL) -m 0755 -d $(XBMCDESTDIR)/resources/lib.nt/drivers
+	$(INSTALL) -m 0644 -t $(XBMCDESTDIR)/resources/lib.nt/drivers project/release/dfatmo-file.dll project/release/dfatmo-serial.dll project/release/dfatmo-df10ch.dll
 
 dfatmoinstall: dfatmo
 	$(INSTALL) -D -m 0644 dfatmo.h $(DFATMOINCLDIR)/dfatmo.h
@@ -133,12 +143,14 @@ $(XBMCADDON): $(XBMCADDONFILES)
 $(XBMCADDONWIN): $(XBMCADDONFILES) README project/release/atmodriver.pyd project/release/dfatmo-file.dll project/release/dfatmo-serial.dll project/release/dfatmo-df10ch.dll
 	-rm -f $@
 	-rm -rf ./build
-	$(MAKE) xbmcinstall XBMCDESTDIR=./build/script.dfatmo
-	$(INSTALL) -m 0644 README build/script.dfatmo/readme.txt
-	$(INSTALL) -m 0755 -d build/script.dfatmo/resources/lib.nt
-	$(INSTALL) -m 0644 -t build/script.dfatmo/resources/lib.nt project/release/atmodriver.pyd
-	$(INSTALL) -m 0755 -d build/script.dfatmo/resources/lib.nt/drivers
-	$(INSTALL) -m 0644 -t build/script.dfatmo/resources/lib.nt/drivers project/release/dfatmo-file.dll project/release/dfatmo-serial.dll project/release/dfatmo-df10ch.dll
+	$(MAKE) winxbmcinstall XBMCDESTDIR=./build/script.dfatmo
+	(cd ./build && zip -r ../$@ script.dfatmo)
+
+$(XBMCFRODOADDONWIN): $(XBMCADDONFILES) addon_frodo.xml README project/release/atmodriver.pyd project/release/dfatmo-file.dll project/release/dfatmo-serial.dll project/release/dfatmo-df10ch.dll
+	-rm -f $@
+	-rm -rf ./build
+	$(MAKE) winxbmcinstall XBMCDESTDIR=./build/script.dfatmo
+	$(INSTALL) -m 0644 addon_frodo.xml build/script.dfatmo/addon.xml
 	(cd ./build && zip -r ../$@ script.dfatmo)
 
 xineplug_post_dfatmo.o: xineplug_post_dfatmo.c atmodriver.h dfatmo.h

@@ -6,7 +6,7 @@
 	provider-name="durchflieger"
 	>
 	<requires>
-		<import addon="xbmc.python" version="2.1.0"/>
+		<import addon="xbmc.python" version="2.0.0"/>
 	</requires>
 	<extension point="xbmc.python.script" library="dfatmo.py">
 		<provides>executable</provides>
