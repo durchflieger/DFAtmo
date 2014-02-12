@@ -33,7 +33,8 @@ XINEDESTDIR ?=
 VDRDESTDIR ?=
 XBMCDESTDIR ?= $(HOME)/.xbmc/addons/script.dfatmo
 
-XBMCADDON = build/dfatmo-xbmc-addon.zip
+XBMCADDON = dfatmo-xbmc-addon.zip
+XBMCFRODOADDON = dfatmo-xbmc-frodo-addon.zip
 XBMCADDONWIN = windows/dfatmo-xbmc-addon-win.zip
 XBMCFRODOADDONWIN = windows/dfatmo-xbmc-frodo-addon-win.zip
 XBMCADDONFILES = dfatmo.py service.py addon.xml settings.xml mydriver.py icon.png
@@ -57,7 +58,7 @@ endif
 
 ifneq (NO, $(shell bash -c "type -p python-config || echo NO"))
 HAVE_PYTHON=1
-ATMODRIVER = atmodriver.so $(XBMCADDON)
+ATMODRIVER = atmodriver.so $(XBMCADDON) $(XBMCFRODOADDON)
 CFLAGS_PYTHON ?= $(shell python-config --cflags)
 LDFLAGS_PYTHON ?= $(shell python-config --ldflags)
 endif
@@ -77,13 +78,15 @@ STD_BUILD_TARGETS += vdrplugin
 STD_INSTALL_TARGETS += vdrinstall
 endif
 
-.PHONY: all xineplugin xbmcaddon xbmcaddonwin xbmcfrodoaddonwin dfatmo vdrplugin install xineinstall xbmcinstall dfatmoinstall vdrinstall clean
+.PHONY: all xineplugin xbmcaddon xbmcfrodoaddon xbmcaddonwin xbmcfrodoaddonwin dfatmo vdrplugin install xineinstall xbmcinstall dfatmoinstall vdrinstall clean
 
 all: $(STD_BUILD_TARGETS)
 
 xineplugin: $(XINEPOSTATMO)
 
 xbmcaddon: $(XBMCADDON)
+
+xbmcfrodoaddon: $(XBMCFRODOADDON)
 
 xbmcaddonwin: $(XBMCADDONWIN)
 
@@ -131,13 +134,20 @@ clean:
 ifdef HAVE_VDR
 	-$(MAKE) -f vdr2plug.mk clean
 endif
-	-rm -f *.so* *.o $(XBMCADDON)
+	-rm -f *.so* *.o $(XBMCADDON) $(XBMCFRODOADDON)
 	-rm -rf ./build
 
 $(XBMCADDON): $(XBMCADDONFILES)
 	-rm -f $@
 	-rm -rf ./build
 	$(MAKE) xbmcinstall XBMCDESTDIR=./build/script.dfatmo
+	(cd ./build && zip -r ../$@ script.dfatmo)
+
+$(XBMCFRODOADDON): $(XBMCADDONFILES) addon_frodo.xml
+	-rm -f $@
+	-rm -rf ./build
+	$(MAKE) xbmcinstall XBMCDESTDIR=./build/script.dfatmo
+	$(INSTALL) -m 0644 addon_frodo.xml build/script.dfatmo/addon.xml
 	(cd ./build && zip -r ../$@ script.dfatmo)
 
 $(XBMCADDONWIN): $(XBMCADDONFILES) README project/release/atmodriver.pyd project/release/dfatmo-file.dll project/release/dfatmo-serial.dll project/release/dfatmo-df10ch.dll
