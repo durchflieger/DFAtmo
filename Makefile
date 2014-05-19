@@ -54,6 +54,9 @@ HAVE_LIBUSB=1
 OUTPUTDRIVERS += dfatmo-df10ch.so
 CFLAGS_USB ?= $(shell pkg-config --cflags libusb-1.0)
 LIBS_USB ?= $(shell pkg-config --libs libusb-1.0)
+ifneq (NO, $(shell pkg-config --exists 'libusb-1.0 >= 1.0.17 libusb-1.0 < 1.0.18' || echo NO))
+CFLAGS_USB += -DHAVE_LIBUSB_STRERROR=1
+endif
 endif
 
 ifneq (NO, $(shell bash -c "type -p python-config || echo NO"))
