@@ -76,6 +76,8 @@ typedef struct {
   atmo_parameters_t param;
   const char *protocol;
   const uint8_t *escapes;
+  uint8_t dmx;
+  LARGE_INTEGER dmx_break_duration, dmx_mark_duration;
   dev_handle_t devfd;
   char driver_param[SIZE_DRIVER_PARAM];
 } serial_output_driver_t;
@@ -128,6 +130,9 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
           this->protocol = v;
       } else if (!strcmp(t, "amblone")) {
           this->escapes = amblone_escapes;
+	  }
+	  else if (!strcmp(t, "dmx")) {
+		  this->dmx = TRUE;
 #ifndef WIN32
       } else if (!strcmp(t, "usb")) {
         usb = v;
@@ -195,11 +200,12 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
   }
 
     /* configure serial port */
-  bspeed = SPEED_CONST(38400);
-  if (speed == NULL)
+  if (speed == NULL) {
     speed = "38400";
-  else {
-    switch (atoi(speed)) {
+    bspeed = SPEED_CONST(38400);
+  } else {
+    bspeed = atoi(speed);
+    switch (bspeed) {
     case 1200:
       bspeed = SPEED_CONST(1200);
       break;
@@ -273,8 +279,10 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
       break;
 #endif
     default:
-      snprintf(this->output_driver.errmsg, sizeof(this->output_driver.errmsg), "serial port device speed '%s' unsupported", speed);
-      return -1;
+      if (bspeed <= 0) {
+        snprintf(this->output_driver.errmsg, sizeof(this->output_driver.errmsg), "serial port device speed '%s' unsupported", speed);
+        return -1;
+      }
     }
   }
 
@@ -282,6 +290,12 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
 
 #ifdef WIN32
   {
+	LARGE_INTEGER freq;
+	if (this->dmx && QueryPerformanceFrequency(&freq)) {
+		this->dmx_break_duration.QuadPart = 100 * freq.QuadPart / 1000000;	// 100us break duration
+		this->dmx_mark_duration.QuadPart = 10 * freq.QuadPart / 1000000;	// 10us mark after break duration
+	}
+
     DCB dcbSerialParams = {0};
     dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
 
@@ -513,7 +527,7 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
       }
       break;
 
-    case DEC_CONST_STATE:
+	case DEC_CONST_STATE:
       if (c >= '0' && c <= '9') {
         data = data * 10 + c - '0';
         if (data > 255)
@@ -744,6 +758,29 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
       ++v;
     }
     *crc_pos = crc;
+  }
+
+  if (this->dmx) {
+	  if (!SetCommBreak(this->devfd)) {
+		char buf[128];
+		GET_SYS_ERR_MSG(buf);
+		snprintf(this->output_driver.errmsg, sizeof(this->output_driver.errmsg), "setting comm break failed: %s", buf);
+		return -1;
+	  }
+
+	  LARGE_INTEGER start_time, time;
+	  if (QueryPerformanceCounter(&start_time))
+		while (QueryPerformanceCounter(&time) && (time.QuadPart - start_time.QuadPart) < this->dmx_break_duration.QuadPart);
+
+	  if (!ClearCommBreak(this->devfd)) {
+		  char buf[128];
+		  GET_SYS_ERR_MSG(buf);
+		  snprintf(this->output_driver.errmsg, sizeof(this->output_driver.errmsg), "clearing comm break failed: %s", buf);
+		  return -1;
+	  }
+
+	  if (QueryPerformanceCounter(&start_time))
+		  while (QueryPerformanceCounter(&time) && (time.QuadPart - start_time.QuadPart) < this->dmx_mark_duration.QuadPart);
   }
 
   len = (dev_size_t)(m - msg);
