@@ -1,3 +1,9 @@
+dfatmo (0.5-0) trusty; urgency=low
+
+  * New upstream version
+
+ -- Andreas Auras <yak54@inkennet.de>  Sun, 12 Feb 2017 19:33:06 +0100
+
 dfatmo (0.4-0) precise; urgency=low
 
   * New upstream version
