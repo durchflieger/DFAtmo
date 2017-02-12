@@ -21,12 +21,43 @@
 #
 # ---
 
-import os, sys, threading, time, imp
 import xbmc, xbmcaddon, xbmcgui
-
 addon = xbmcaddon.Addon()
-addonPath = addon.getAddonInfo('path')
 addonId = addon.getAddonInfo('id')
+
+
+LOG_NONE = 0
+LOG_ERROR = 1
+LOG_INFO = 2
+LOG_DEBUG = 3
+
+logLevel = addon.getSetting('log_level')
+if logLevel and len(logLevel) > 0:
+    logLevel = int(logLevel)
+else:
+    logLevel = LOG_INFO
+    
+def log(level, msg):
+    if level <= logLevel:
+        if level == LOG_ERROR:
+            l = xbmc.LOGERROR
+        elif level == LOG_INFO:
+            l = xbmc.LOGINFO
+        elif level == LOG_DEBUG:
+            l = xbmc.LOGDEBUG
+        xbmc.log("DFAtmo: " + str(msg), l)
+
+
+kodiMainWindow = xbmcgui.Window(10000)
+statePropertyName = addonId + '_state'
+if kodiMainWindow.getProperty(statePropertyName):
+    log(LOG_DEBUG, "signal stop of service")
+    kodiMainWindow.clearProperty(statePropertyName)
+    sys.exit(0)
+
+
+import os, sys, threading, time, imp
+addonPath = addon.getAddonInfo('path')
 addonConfigFile = xbmc.translatePath('special://profile/addon_data/{0}/settings.xml'.format(addonId))
 
 addonResourcePath = xbmc.translatePath(os.path.join(addonPath, 'resources', 'lib'))
@@ -39,29 +70,6 @@ addonIconFile = xbmc.translatePath(os.path.join(addonPath, 'icon.png'))
 
 DFATMO_DRIVER_VERSION = 1
 OUTPUT_DRIVER_INTERFACE_VERSION = 1
-
-LOG_NONE = 0
-LOG_ERROR = 1
-LOG_INFO = 2
-LOG_DEBUG = 3
-
-
-logLevel = addon.getSetting('log_level')
-if logLevel and len(logLevel) > 0:
-    logLevel = int(logLevel)
-else:
-    logLevel = LOG_INFO
-    
-    
-def log(level, msg):
-    if level <= logLevel:
-        if level == LOG_ERROR:
-            l = xbmc.LOGERROR
-        elif level == LOG_INFO:
-            l = xbmc.LOGINFO
-        elif level == LOG_DEBUG:
-            l = xbmc.LOGDEBUG
-        xbmc.log("DFAtmo: " + str(msg), l)
 
     
 def displayNotification(level, msg):
@@ -76,12 +84,12 @@ def displayNotificationAndLog(level, msg):
     displayNotification(level, msg)
 
 
+useLegacyCaptureAPI = True
 try:
     if xbmc.CAPTURE_STATE_DONE:
-        pass
+        log(LOG_DEBUG, "using legacy capture api")
 except:
-    displayNotificationAndLog(LOG_ERROR, "XBMC does not have RenderCapture interface patch!")
-    sys.exit(1)
+    useLegacyCaptureAPI = False
 
 
 def getDFAtmoInstDir():
@@ -419,11 +427,13 @@ class CaptureThread(threading.Thread):
             self.outputDriver = self.atmoDriver
             
         try:
+            log(LOG_DEBUG, "before configure")
             self.atmoDriver.configure()
         except atmodriver.error as err:
             displayNotification(LOG_ERROR, err)
             return False
         
+        log(LOG_DEBUG, "after configure")
         return True
 
     def getParm(self, name):
@@ -450,6 +460,7 @@ class CaptureThread(threading.Thread):
         return True
 
     def run(self):
+        monitor = xbmc.Monitor()
         player = xbmc.Player()
         capture = xbmc.RenderCapture()
         ad = self.atmoDriver
@@ -472,18 +483,29 @@ class CaptureThread(threading.Thread):
         captureCount = 1
         instantConfigured = False
 
-        displayNotificationAndLog(LOG_INFO, "Service running")
-        while self.running > 0 or (self.running == -1 and not xbmc.abortRequested):
-            st = capture.getCaptureState()
-            if st != xbmc.CAPTURE_STATE_DONE and st != xbmc.CAPTURE_STATE_FAILED:
-                capture.waitForCaptureStateChangeEvent(eventWaitTime)
-                continue
+        kodiMainWindow.setProperty(statePropertyName, 'running')
 
-            if pending:
-                pending = False
-                if st == xbmc.CAPTURE_STATE_DONE:
-                    self.analyzedColors = ad.analyzeImage(capture.getWidth(), capture.getHeight(), imgFmt, capture.getImage())
-                    captureCount = captureCount + 1
+        displayNotificationAndLog(LOG_INFO, "Service running")
+
+        while self.running > 0 or (self.running == -1 and not monitor.abortRequested() and kodiMainWindow.getProperty(statePropertyName)):
+            img = None
+            if useLegacyCaptureAPI:
+                st = capture.getCaptureState()
+                if st != xbmc.CAPTURE_STATE_DONE and st != xbmc.CAPTURE_STATE_FAILED:
+                    capture.waitForCaptureStateChangeEvent(eventWaitTime)
+                    continue
+ 
+                if pending and st == xbmc.CAPTURE_STATE_DONE:
+                    img = capture.getImage()
+            elif pending and player.isPlayingVideo():
+                img = capture.getImage(eventWaitTime)
+                if img == None or len(img) == 0:
+                    continue
+ 
+            pending = False
+            if img:
+                self.analyzedColors = ad.analyzeImage(capture.getWidth(), capture.getHeight(), imgFmt, img)
+                captureCount = captureCount + 1
 
             actualTime = time.time()
             if actualTime < nextCaptureTime:
@@ -556,6 +578,8 @@ class CaptureThread(threading.Thread):
             ot.stop()
             ot = None
             log(LOG_INFO, "average capture interval: %.3f" % ((time.time() - videoStartTime) / captureCount))
+
+        kodiMainWindow.clearProperty(statePropertyName)
 
         displayNotificationAndLog(LOG_INFO, "Service stopped")
 
