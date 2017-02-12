@@ -76,8 +76,10 @@ typedef struct {
   atmo_parameters_t param;
   const char *protocol;
   const uint8_t *escapes;
+#ifdef WIN32
   uint8_t dmx;
   LARGE_INTEGER dmx_break_duration, dmx_mark_duration;
+#endif
   dev_handle_t devfd;
   char driver_param[SIZE_DRIVER_PARAM];
 } serial_output_driver_t;
@@ -130,10 +132,10 @@ static int serial_driver_open(output_driver_t *this_gen, atmo_parameters_t *p) {
           this->protocol = v;
       } else if (!strcmp(t, "amblone")) {
           this->escapes = amblone_escapes;
-	  }
-	  else if (!strcmp(t, "dmx")) {
+#ifdef WIN32
+	  } else if (!strcmp(t, "dmx")) {
 		  this->dmx = TRUE;
-#ifndef WIN32
+#else
       } else if (!strcmp(t, "usb")) {
         usb = v;
 #endif
@@ -760,6 +762,7 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
     *crc_pos = crc;
   }
 
+#ifdef WIN32
   if (this->dmx) {
 	  if (!SetCommBreak(this->devfd)) {
 		char buf[128];
@@ -782,6 +785,7 @@ static int serial_driver_output_colors(output_driver_t *this_gen, rgb_color_t *c
 	  if (QueryPerformanceCounter(&start_time))
 		  while (QueryPerformanceCounter(&time) && (time.QuadPart - start_time.QuadPart) < this->dmx_mark_duration.QuadPart);
   }
+#endif
 
   len = (dev_size_t)(m - msg);
   if (!WRITE_DATA(this->devfd, msg, len, written) || !FLUSH_BUFFER(this->devfd)) {
