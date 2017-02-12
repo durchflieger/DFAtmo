@@ -98,7 +98,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;HAVE_LIBUSB_STRERROR;NDEBUG;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;DF10CHDRIVER_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\libusb\libusb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\libusb-1.0.20\include\libusb-1.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -106,7 +106,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalOptions>/export:dfatmo_new_output_driver %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalLibraryDirectories>..\..\..\libusb\Win32\Release\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\libusb-1.0.20\MS32\dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
